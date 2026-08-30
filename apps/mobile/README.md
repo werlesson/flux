@@ -1,56 +1,62 @@
-# Welcome to your Expo app 👋
+# Flux — app mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App React Native (Expo) do Flux. Para o contexto do produto, o escopo do MVP e a cadeia de especificação, veja o [README da raiz](../../README.md).
 
-## Get started
+> **Estado atual:** ainda é o template do `create-expo-app`. Nenhuma funcionalidade do Flux foi implementada.
 
-1. Install dependencies
+## Rodando
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+O projeto usa **pnpm**:
 
 ```bash
-npm run reset-project
+pnpm install
+pnpm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+| Script | O que faz |
+|---|---|
+| `pnpm start` | `expo start` |
+| `pnpm android` | abre no Android |
+| `pnpm ios` | abre no iOS (fora do escopo do MVP) |
+| `pnpm web` | abre no navegador |
+| `pnpm lint` | `expo lint` |
 
-### Other setup steps
+## Development build
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Enquanto o app for só o template, **Expo Go funciona**.
 
-## Learn more
+A partir do momento em que o rastreamento em background entrar, um **development build passa a ser obrigatório** — `expo-location` não suporta localização em background no Expo Go. No Android será necessário ainda:
 
-To learn more about developing your project with Expo, look at the following resources:
+- config plugin com `isAndroidBackgroundLocationEnabled` e `isAndroidForegroundServiceEnabled`
+- permissão `ACCESS_BACKGROUND_LOCATION`
+- foreground service com notificação persistente
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Estrutura
 
-## Join the community
+```text
+src/
+├── app/          # rotas — expo-router, file-based routing
+├── components/   # componentes de UI
+├── constants/    # tema e constantes
+└── hooks/
+```
 
-Join our community of developers creating universal apps.
+Convenções do template já configuradas:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **TypeScript `strict`**, com alias `@/*` → `./src/*` e `@/assets/*` → `./assets/*`
+- **Typed routes** e **React Compiler** habilitados em `app.json` (`experiments`)
+- Variantes `.web.tsx` para componentes com implementação específica de web
+
+## Antes de escrever código
+
+O Expo mudou bastante entre versões. Consulte a **documentação exata da v57** antes de implementar:
+
+<https://docs.expo.dev/versions/v57.0.0/>
+
+Essa regra também está em [`AGENTS.md`](./AGENTS.md), que é o contexto carregado pelos agentes.
+
+## `pnpm reset-project`
+
+Script herdado do template: move `src/` e `scripts/` para `example/` e cria um `src/app` em branco.
+
+⚠️ Só faz sentido enquanto o app ainda for o template. Depois que houver código do Flux, **não rode** — e o script pode ser removido do `package.json` junto com `scripts/reset-project.js`.
