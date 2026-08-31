@@ -1,62 +1,39 @@
 # Flux — app mobile
 
-App React Native (Expo) do Flux. Para o contexto do produto, o escopo do MVP e a cadeia de especificação, veja o [README da raiz](../../README.md).
+Aplicativo Android de acompanhamento e treinamento de corrida, construído com Expo SDK 57 e React Native.
 
-> **Estado atual:** ainda é o template do `create-expo-app`. Nenhuma funcionalidade do Flux foi implementada.
-
-## Rodando
-
-O projeto usa **pnpm**:
+## Instalação
 
 ```bash
 pnpm install
-pnpm start
 ```
 
-| Script | O que faz |
-|---|---|
-| `pnpm start` | `expo start` |
-| `pnpm android` | abre no Android |
-| `pnpm ios` | abre no iOS (fora do escopo do MVP) |
-| `pnpm web` | abre no navegador |
-| `pnpm lint` | `expo lint` |
+## Development build Android
 
-## Development build
+O Flux **não suporta Expo Go**. A localização em background depende de código nativo, permissões Android e um foreground service que não estão disponíveis no Expo Go.
 
-Enquanto o app for só o template, **Expo Go funciona**.
+Gere o projeto Android e instale o development build em um aparelho físico conectado por USB:
 
-A partir do momento em que o rastreamento em background entrar, um **development build passa a ser obrigatório** — `expo-location` não suporta localização em background no Expo Go. No Android será necessário ainda:
-
-- config plugin com `isAndroidBackgroundLocationEnabled` e `isAndroidForegroundServiceEnabled`
-- permissão `ACCESS_BACKGROUND_LOCATION`
-- foreground service com notificação persistente
-
-## Estrutura
-
-```text
-src/
-├── app/          # rotas — expo-router, file-based routing
-├── components/   # componentes de UI
-├── constants/    # tema e constantes
-└── hooks/
+```bash
+npx expo prebuild --platform android
+npx expo run:android --device
 ```
 
-Convenções do template já configuradas:
+Depois do primeiro build, inicie o bundler para desenvolvimento:
 
-- **TypeScript `strict`**, com alias `@/*` → `./src/*` e `@/assets/*` → `./assets/*`
-- **Typed routes** e **React Compiler** habilitados em `app.json` (`experiments`)
-- Variantes `.web.tsx` para componentes com implementação específica de web
+```bash
+pnpm start --dev-client
+```
 
-## Antes de escrever código
+Com o app aberto, agite o aparelho ou pressione `m` no terminal do bundler para acessar o menu de desenvolvimento.
 
-O Expo mudou bastante entre versões. Consulte a **documentação exata da v57** antes de implementar:
+## Qualidade
 
-<https://docs.expo.dev/versions/v57.0.0/>
+```bash
+pnpm test
+pnpm test:watch
+pnpm lint
+npx tsc --noEmit
+```
 
-Essa regra também está em [`AGENTS.md`](./AGENTS.md), que é o contexto carregado pelos agentes.
-
-## `pnpm reset-project`
-
-Script herdado do template: move `src/` e `scripts/` para `example/` e cria um `src/app` em branco.
-
-⚠️ Só faz sentido enquanto o app ainda for o template. Depois que houver código do Flux, **não rode** — e o script pode ser removido do `package.json` junto com `scripts/reset-project.js`.
+Os testes usam mocks base para localização, tarefas em background, fala e vibração. `expo-sqlite` não é mockado no setup; o teste de integração abre um banco `:memory:` diretamente pela API do pacote.
