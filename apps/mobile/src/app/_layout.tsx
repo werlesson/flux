@@ -42,5 +42,15 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="index" />
+    <Stack.Screen name="training-library" />
+    <Stack.Screen name="training-editor" />
+    <Stack.Screen name="training-preview" />
+    <Stack.Screen name="activity" options={{ gestureEnabled: false }} />
+    <Stack.Screen name="activity-result" />
+    <Stack.Screen name="rpe" />
+    <Stack.Screen name="history" />
+    <Stack.Screen name="activity-detail" />
+  </Stack>;
 }
