@@ -121,6 +121,36 @@ describe('nÃºcleo da atividade', () => {
     expect(saved!.elapsed_duration_seconds).toBe(2); expect(saved!.distance_meters).toBeGreaterThan(0); database.close();
   });
 
+  it('aguarda o checkpoint ao ir para background', async () => {
+    const { userId, engine, time, database } = await setup(0, { persistenceIntervalSeconds: 60, pointBatchSize: 100 });
+    await engine.startFreeRun(userId);
+    await engine.ingest(sample(0)); time.value = 10_000; await engine.ingest(sample(10, 0.00018));
+
+    await engine.onBackground();
+
+    const [saved] = await database.all<{ elapsed_duration_seconds: number; moving_duration_seconds: number; distance_meters: number }>(
+      'SELECT elapsed_duration_seconds,moving_duration_seconds,distance_meters FROM activities',
+    );
+    expect(saved).toMatchObject({ elapsed_duration_seconds: 10, moving_duration_seconds: 10 });
+    expect(saved!.distance_meters).toBeGreaterThan(0);
+    database.close();
+  });
+
+  it('grava as metricas correntes ao pausar', async () => {
+    const { userId, engine, time, database } = await setup(0, { persistenceIntervalSeconds: 60, pointBatchSize: 100 });
+    await engine.startFreeRun(userId);
+    await engine.ingest(sample(0)); time.value = 10_000; await engine.ingest(sample(10, 0.00018));
+
+    await engine.pause();
+
+    const [saved] = await database.all<{ elapsed_duration_seconds: number; moving_duration_seconds: number; distance_meters: number }>(
+      'SELECT elapsed_duration_seconds,moving_duration_seconds,distance_meters FROM activities',
+    );
+    expect(saved).toMatchObject({ elapsed_duration_seconds: 10, moving_duration_seconds: 10 });
+    expect(saved!.distance_meters).toBeGreaterThan(0);
+    database.close();
+  });
+
   it('average e nulo sem distancia e metricas ficam imutaveis depois do fim', async () => {
     const { userId, engine, database } = await setup(); await engine.startFreeRun(userId);
     const finished = await engine.finish(new Date(2_000)); expect(finished.average_pace_seconds_per_km).toBeNull();

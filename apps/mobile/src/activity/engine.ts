@@ -89,6 +89,8 @@ export class ActivityEngine {
   async pause(at = new Date(this.clock.now())): Promise<void> {
     this.requireTransition('paused');
     await this.flush();
+    this.checkpoint(at, true);
+    await this.drainWrites();
     await this.database.transaction(async tx => {
       await new ActivitiesRepository(tx).atualizarStatus(this.activity!.id, 'paused', at);
       await tx.run('INSERT INTO activity_pause_intervals(activity_id,started_at,created_at) VALUES(?,?,?)', [this.activity!.id, at.toISOString(), at.toISOString()]);
@@ -111,7 +113,11 @@ export class ActivityEngine {
     await this.orchestrator.processSample(sample);
   }
 
-  async onBackground(): Promise<void> { await this.flush(); await this.checkpoint(new Date(this.clock.now()), true); }
+  async onBackground(): Promise<void> {
+    await this.flush();
+    this.checkpoint(new Date(this.clock.now()), true);
+    await this.drainWrites();
+  }
 
   metrics(now = this.clock.now()): ActivityMetricsSnapshot {
     if (!this.activity) return { elapsed: 0, moving: 0, distance: 0, currentPace: null, averagePace: null };
