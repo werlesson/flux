@@ -98,7 +98,13 @@ describe('filtro de GPS', () => {
 });
 
 describe('permissões', () => {
-  const response = (status: 'granted' | 'denied', canAskAgain: boolean) => ({ status, canAskAgain });
+  // `status` precisa ser o enum PermissionStatus do expo-location, não a string
+  // literal: com a literal o objeto não satisfaz PermissionResponse e o tsc
+  // reprova, ainda que o jest passe (o gate 2 não faz typecheck).
+  const response = (status: 'granted' | 'denied', canAskAgain: boolean) => ({
+    status: status === 'granted' ? Location.PermissionStatus.GRANTED : Location.PermissionStatus.DENIED,
+    canAskAgain,
+  });
   it('só solicita background após foreground concedido', async () => {
     const calls: string[] = [];
     const api: PermissionApi = {

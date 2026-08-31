@@ -25,4 +25,14 @@ export class GpsFilterOrchestrator {
   getState(): GpsFilterState {
     return this.state;
   }
+
+  /**
+   * Reidrata o estado a partir do que foi persistido, para que uma atividade
+   * recuperada volte com o último ponto aceito como referência. Sem isso as
+   * regras de salto e velocidade não teriam contra o que comparar e a primeira
+   * amostra após a recuperação passaria sem validação (US-6.3, US-3.1).
+   */
+  restoreState(state: GpsFilterState): void {
+    this.state = state;
+  }
 }

@@ -30,6 +30,11 @@ export class ActivitiesRepository {
     const result = await this.database.run(`UPDATE activities SET elapsed_duration_seconds=?,moving_duration_seconds=?,distance_meters=?,average_pace_seconds_per_km=?,best_pace_seconds_per_km=?,finished_at=COALESCE(?,finished_at),activity_status_id=COALESCE(?,activity_status_id),updated_at=? WHERE id=? AND finished_at IS NULL`, [metrics.elapsed_duration_seconds, metrics.moving_duration_seconds, metrics.distance_meters, metrics.average_pace_seconds_per_km ?? null, metrics.best_pace_seconds_per_km ?? null, metrics.finished_at ? now(metrics.finished_at) : null, statusId, now(at), id]);
     if (!result.changes) throw new Error('Atividade finalizada não permite alterar métricas objetivas');
   }
+  async atualizarStatus(id: number, status: ActivityStatusSlug, at = new Date()): Promise<void> {
+    const statusId = await this.lookups.idPorSlug('activity_statuses', status);
+    const result = await this.database.run('UPDATE activities SET activity_status_id=?,updated_at=? WHERE id=? AND finished_at IS NULL', [statusId, now(at), id]);
+    if (!result.changes) throw new Error('Atividade finalizada nÃ£o permite transiÃ§Ã£o');
+  }
   async atualizarAvaliacao(id: number, rpe: number | null, notes: string | null, at = new Date()): Promise<void> {
     if (rpe !== null && (!Number.isInteger(rpe) || rpe < 1 || rpe > 10)) throw new Error('RPE deve estar entre 1 e 10');
     await this.database.run('UPDATE activities SET rpe=?,notes=?,updated_at=? WHERE id=?', [rpe, notes, now(at), id]);

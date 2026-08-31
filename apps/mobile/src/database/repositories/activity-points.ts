@@ -4,7 +4,7 @@ import { withTransaction } from '../transaction';
 import { LookupRepository } from './lookups';
 import { dates, now } from './mappers';
 
-export interface ActivityPointInput { activity_id: number; latitude: number; longitude: number; altitude?: number | null; accuracy?: number | null; speed?: number | null; recorded_at: Date; is_valid: boolean; rejection_reason_slug?: GpsRejectionReasonSlug | null }
+export interface ActivityPointInput { activity_id: number; latitude: number; longitude: number; altitude?: number | null; accuracy?: number | null; speed?: number | null; recorded_at: Date; is_valid: boolean; rejection_reason_slug?: GpsRejectionReasonSlug | null; segment_index?: number }
 
 export class ActivityPointsRepository {
   constructor(private readonly database: DatabaseAdapter, private readonly lookups = new LookupRepository(database)) {}
@@ -15,7 +15,7 @@ export class ActivityPointsRepository {
     }
     const prepared = await Promise.all(points.map(async point => ({ point, reasonId: point.rejection_reason_slug ? await this.lookups.idPorSlug('gps_rejection_reasons', point.rejection_reason_slug) : null })));
     await withTransaction(this.database, async tx => {
-      for (const { point, reasonId } of prepared) await tx.run('INSERT INTO activity_points(activity_id,latitude,longitude,altitude,accuracy,speed,recorded_at,is_valid,rejection_reason_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)', [point.activity_id, point.latitude, point.longitude, point.altitude ?? null, point.accuracy ?? null, point.speed ?? null, now(point.recorded_at), point.is_valid ? 1 : 0, reasonId, now(at)]);
+      for (const { point, reasonId } of prepared) await tx.run('INSERT INTO activity_points(activity_id,latitude,longitude,altitude,accuracy,speed,recorded_at,is_valid,rejection_reason_id,segment_index,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)', [point.activity_id, point.latitude, point.longitude, point.altitude ?? null, point.accuracy ?? null, point.speed ?? null, now(point.recorded_at), point.is_valid ? 1 : 0, reasonId, point.segment_index ?? 0, now(at)]);
     });
   }
   inserir(points: ActivityPointInput[], at = new Date()): Promise<void> { return this.inserirEmLote(points, at); }

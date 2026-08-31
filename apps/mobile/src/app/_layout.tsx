@@ -15,6 +15,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { ActivityProvider } from '@/activity/activity-context';
 import { initializeDatabase } from '@/database';
 
 void SplashScreen.preventAutoHideAsync();
@@ -42,7 +43,7 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }}>
+  return <ActivityProvider><Stack screenOptions={{ headerShown: false }}>
     <Stack.Screen name="index" />
     <Stack.Screen name="training-library" />
     <Stack.Screen name="training-editor" />
@@ -52,5 +53,5 @@ export default function RootLayout() {
     <Stack.Screen name="rpe" />
     <Stack.Screen name="history" />
     <Stack.Screen name="activity-detail" />
-  </Stack>;
+  </Stack></ActivityProvider>;
 }
