@@ -34,7 +34,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - A abertura do app em device é verificada na **fase 21**, não aqui — nenhum critério desta fase depende de hardware conectado
   - **Traces:** Tech Stack (project-description.md)
 
-- [ ] **Task:** Configurar `app.json` com a identidade Flux e as permissões Android de localização
+- [x] **Task:** Configurar `app.json` com a identidade Flux e as permissões Android de localização
   - **Acceptance criteria:**
     - `name`, `slug` e `scheme` passam de `mobile` para `flux`; `android.package` definido
     - `orientation: "portrait"` e `userInterfaceStyle: "automatic"`
