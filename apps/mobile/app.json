@@ -17,7 +17,6 @@
         "FOREGROUND_SERVICE_LOCATION"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#15100F",
         "foregroundImage": "./assets/images/flux-mark.png",
         "monochromeImage": "./assets/images/flux-mark.png"
       },
@@ -40,7 +39,6 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#15100F",
           "image": "./assets/images/flux-mark.png",
           "imageWidth": 104
         }

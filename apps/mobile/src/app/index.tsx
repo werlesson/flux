@@ -1,25 +1,28 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+
+import { useTheme } from '@/hooks/use-theme';
 
 export default function HomeScreen() {
+  const theme = useTheme();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Flux</Text>
-      <StatusBar style="light" />
+    <View
+      style={{
+        alignItems: 'center',
+        backgroundColor: theme.colors.background,
+        flex: 1,
+        justifyContent: 'center',
+      }}>
+      <Text
+        style={{
+          color: theme.colors.text,
+          fontFamily: theme.fonts.title.semibold,
+          fontSize: theme.fontSizes.metric,
+        }}>
+        Flux
+      </Text>
+      <StatusBar style={theme.isDark ? 'light' : 'dark'} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    backgroundColor: '#15100F',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    color: '#FAF3E6',
-    fontFamily: 'Barlow_600SemiBold',
-    fontSize: 48,
-  },
-});
