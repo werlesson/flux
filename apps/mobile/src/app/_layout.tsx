@@ -49,6 +49,7 @@ export default function RootLayout() {
     <Stack.Screen name="training-editor" />
     <Stack.Screen name="training-preview" />
     <Stack.Screen name="activity" options={{ gestureEnabled: false }} />
+    <Stack.Screen name="activity-blocked" options={{ gestureEnabled: false }} />
     <Stack.Screen name="activity-result" />
     <Stack.Screen name="rpe" />
     <Stack.Screen name="history" />

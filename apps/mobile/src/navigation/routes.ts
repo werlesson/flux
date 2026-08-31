@@ -6,6 +6,7 @@ export const routes = {
   trainingEditor: '/training-editor',
   trainingPreview: '/training-preview',
   activity: '/activity',
+  activityBlocked: '/activity-blocked',
   activityResult: '/activity-result',
   rpe: '/rpe',
   history: '/history',

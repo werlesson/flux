@@ -5,7 +5,7 @@ import { maxAccuracyMeters } from '@/gps/thresholds';
 export type InitialFixState = { status: 'aguardando' | 'boa_precisao' | 'sem_precisao_aceitavel'; location: Location.LocationObject | null };
 export interface InitialFixAttempt { cancel(): void; done: Promise<InitialFixState> }
 
-export function acquireInitialFix(onChange: (state: InitialFixState) => void, timeoutMilliseconds = 15_000): InitialFixAttempt {
+export function acquireInitialFix(onChange: (state: InitialFixState) => void, timeoutMilliseconds = 15_000, continueMonitoringAfterTimeout = false): InitialFixAttempt {
   let settled = false;
   let subscription: Location.LocationSubscription | undefined;
   let finish!: (state: InitialFixState) => void;
@@ -20,7 +20,10 @@ export function acquireInitialFix(onChange: (state: InitialFixState) => void, ti
   };
   const waiting: InitialFixState = { status: 'aguardando', location: null };
   onChange(waiting);
-  const timer = setTimeout(() => complete({ status: 'sem_precisao_aceitavel', location: null }), timeoutMilliseconds);
+  const timer = setTimeout(() => {
+    const state: InitialFixState = { status: 'sem_precisao_aceitavel', location: null };
+    if (continueMonitoringAfterTimeout) onChange(state); else complete(state);
+  }, timeoutMilliseconds);
   void Location.watchPositionAsync({ accuracy: Location.Accuracy.BestForNavigation }, location => {
     if (location.coords.accuracy != null && location.coords.accuracy <= maxAccuracyMeters) complete({ status: 'boa_precisao', location });
     else onChange({ status: 'sem_precisao_aceitavel', location });

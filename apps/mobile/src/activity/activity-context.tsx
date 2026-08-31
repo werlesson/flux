@@ -5,7 +5,7 @@ import { getLocalUserId, initializeDatabase } from '@/database';
 import type { ActivityStatusSlug } from '@/database/types';
 import type { GpsSample } from '@/gps/filter';
 import type { SignalQuality } from '@/gps/signal-quality';
-import { setBackgroundGpsConsumer } from '@/location/background-location';
+import { setBackgroundGpsConsumer, startLocationTracking, stopLocationTracking } from '@/location/background-location';
 
 import { ActivityEngine, type ActivityMetricsSnapshot } from './engine';
 
@@ -65,11 +65,14 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     status: engine?.status ?? null,
     signalQuality: engine?.signalQuality ?? 'sem_sinal',
     activityId: engine?.id ?? null,
-    startFreeRun: () => action(item => item.startFreeRun(getLocalUserId())),
+    startFreeRun: () => action(async item => {
+      await item.startFreeRun(getLocalUserId());
+      await startLocationTracking(true);
+    }),
     ingest: sample => action(item => item.ingest(sample)),
     pause: () => action(item => item.pause()),
     resume: () => action(item => item.resume()),
-    finish: () => action(item => item.finish()),
+    finish: () => action(async item => { await item.finish(); await stopLocationTracking(); }),
   };
 
   return <ActivityContext.Provider value={value}>{children}</ActivityContext.Provider>;

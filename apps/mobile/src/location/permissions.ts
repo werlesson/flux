@@ -17,6 +17,14 @@ const mapPermission = ({ status, canAskAgain }: PermissionResponse): PermissionS
 export class LocationPermissions {
   constructor(private readonly api: PermissionApi = Location) {}
 
+  async getCurrent(): Promise<LocationPermissionStates> {
+    const [foreground, background] = await Promise.all([
+      this.api.getForegroundPermissionsAsync(),
+      this.api.getBackgroundPermissionsAsync(),
+    ]);
+    return { foreground: mapPermission(foreground), background: mapPermission(background) };
+  }
+
   async checkAndRequest(): Promise<LocationPermissionStates> {
     let foreground = await this.api.getForegroundPermissionsAsync();
     if (foreground.status !== Location.PermissionStatus.GRANTED && foreground.canAskAgain) foreground = await this.api.requestForegroundPermissionsAsync();

@@ -43,10 +43,10 @@ describe('nÃºcleo da atividade', () => {
     time.value = 0; expect(engine.metrics().elapsed).toBe(0); database.close();
   });
 
-  it('pausa conta no elapsed, nÃ£o incorpora GPS e sobrevive Ã restauraÃ§Ã£o', async () => {
+  it('pausa congela o elapsed, nÃ£o incorpora GPS e sobrevive Ã restauraÃ§Ã£o', async () => {
     const { userId, engine, time, database } = await setup(); await engine.startFreeRun(userId); await engine.ingest(sample(0)); await engine.ingest(sample(10, 0.00018));
     time.value = 10_000; await engine.pause(); await engine.ingest(sample(20, 0.00036)); time.value = 30_000;
-    expect(engine.metrics()).toMatchObject({ elapsed: 30, moving: 10 });
+    expect(engine.metrics()).toMatchObject({ elapsed: 10, moving: 10 });
     const restored = new ActivityEngine(database, { clock: { now: () => time.value } }); await restored.restoreLastActivity();
     expect(restored.status).toBe('paused'); expect(await database.all('SELECT * FROM activity_points')).toHaveLength(2); database.close();
   });
@@ -68,6 +68,16 @@ describe('nÃºcleo da atividade', () => {
     const { userId, engine, database } = await setup(); await engine.startFreeRun(userId); await engine.ingest(sample(0)); expect(engine.metrics(0).currentPace).toBeNull();
     await engine.ingest(sample(10, 0.00018)); expect(engine.metrics(10_000).averagePace).toBe(engine.metrics(10_000).currentPace);
     await engine.pause(new Date(10_000)); expect(engine.metrics(10_000).currentPace).toBeNull(); database.close();
+  });
+
+  it('retoma o cronometro do valor congelado sem incorporar o intervalo pausado', async () => {
+    const { userId, engine, time, database } = await setup();
+    await engine.startFreeRun(userId);
+    time.value = 10_000; await engine.pause();
+    time.value = 40_000; expect(engine.metrics().elapsed).toBe(10);
+    await engine.resume();
+    time.value = 45_000; expect(engine.metrics().elapsed).toBe(15);
+    database.close();
   });
 
   it('faz checkpoint sem finalizar e consolida paces nulos atomicamente', async () => {
@@ -175,7 +185,7 @@ describe('nÃºcleo da atividade', () => {
     time.value = 20_000; expect(engine.metrics().moving).toBeLessThanOrEqual(engine.metrics().elapsed);
     await engine.pause(); time.value = 120_000;
     const { elapsed, moving } = engine.metrics();
-    expect(moving).toBeLessThanOrEqual(elapsed); expect(elapsed).toBe(120); database.close();
+    expect(moving).toBeLessThanOrEqual(elapsed); expect(elapsed).toBe(20); database.close();
   });
 
   it('pace atual é nulo sem sinal, mesmo com distância já acumulada', async () => {

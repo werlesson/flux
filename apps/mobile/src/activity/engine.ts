@@ -21,6 +21,8 @@ export class ActivityEngine {
   private statusValue: ActivityStatusSlug | null = null;
   private pending: ActivityPointInput[] = [];
   private movingSeconds = 0;
+  private accumulatedPausedMilliseconds = 0;
+  private pausedAt: number | null = null;
   private distanceMeters = 0;
   private lastAcceptedAt: number | null = null;
   private recent: ValidSample[] = [];
@@ -82,6 +84,10 @@ export class ActivityEngine {
     this.lastCheckpointAt = this.clock.now(); this.lastPointFlushAt = this.clock.now();
     const [lastPoint] = await this.database.all<{ segment_index: number }>('SELECT segment_index FROM activity_points WHERE activity_id=? ORDER BY recorded_at DESC LIMIT 1', [activity.id]);
     this.segmentIndex = lastPoint?.segment_index ?? 0;
+    const pauses = await this.database.all<{ started_at: string; finished_at: string | null }>('SELECT started_at,finished_at FROM activity_pause_intervals WHERE activity_id=? ORDER BY started_at', [activity.id]);
+    this.accumulatedPausedMilliseconds = pauses.reduce((total, pause) => total + (pause.finished_at ? Math.max(0, Date.parse(pause.finished_at) - Date.parse(pause.started_at)) : 0), 0);
+    const openPause = pauses.find(pause => pause.finished_at === null);
+    this.pausedAt = openPause ? Date.parse(openPause.started_at) : null;
     await this.restoreFilterState(activity.id);
     return activity;
   }
@@ -95,7 +101,7 @@ export class ActivityEngine {
       await new ActivitiesRepository(tx).atualizarStatus(this.activity!.id, 'paused', at);
       await tx.run('INSERT INTO activity_pause_intervals(activity_id,started_at,created_at) VALUES(?,?,?)', [this.activity!.id, at.toISOString(), at.toISOString()]);
     });
-    this.statusValue = 'paused'; this.lastAcceptedAt = null;
+    this.statusValue = 'paused'; this.pausedAt = at.getTime(); this.lastAcceptedAt = null;
   }
 
   async resume(at = new Date(this.clock.now())): Promise<void> {
@@ -105,7 +111,8 @@ export class ActivityEngine {
       if (!result.changes) throw new Error('Intervalo de pausa aberto nÃ£o encontrado');
       await new ActivitiesRepository(tx).atualizarStatus(this.activity!.id, 'in_progress', at);
     });
-    this.statusValue = 'in_progress'; this.lastAcceptedAt = null;
+    if (this.pausedAt !== null) this.accumulatedPausedMilliseconds += Math.max(0, at.getTime() - this.pausedAt);
+    this.statusValue = 'in_progress'; this.pausedAt = null; this.lastAcceptedAt = null;
   }
 
   async ingest(sample: GpsSample): Promise<void> {
@@ -121,7 +128,8 @@ export class ActivityEngine {
 
   metrics(now = this.clock.now()): ActivityMetricsSnapshot {
     if (!this.activity) return { elapsed: 0, moving: 0, distance: 0, currentPace: null, averagePace: null };
-    const elapsed = elapsedSeconds(this.activity.started_at.getTime(), now);
+    const effectiveNow = this.pausedAt ?? now;
+    const elapsed = Math.max(0, elapsedSeconds(this.activity.started_at.getTime(), effectiveNow) - Math.floor(this.accumulatedPausedMilliseconds / 1000));
     const moving = Math.min(this.movingSeconds, elapsed);
     let currentPace: number | null = null;
     if (this.statusValue === 'in_progress' && this.signalQuality !== 'sem_sinal' && this.recent.length > 1) {

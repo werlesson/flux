@@ -28,8 +28,8 @@ describe('fundação da tela inicial', () => {
 });
 
 describe('shell de navegação', () => {
-  it('centraliza todas as nove rotas do MVP em contratos tipados', () => {
-    expect(Object.values(routes)).toEqual(['/', '/training-library', '/training-editor', '/training-preview', '/activity', '/activity-result', '/rpe', '/history', '/activity-detail']);
-    expect(new Set(Object.values(routes)).size).toBe(9);
+  it('centraliza todas as rotas do MVP em contratos tipados', () => {
+    expect(Object.values(routes)).toEqual(['/', '/training-library', '/training-editor', '/training-preview', '/activity', '/activity-blocked', '/activity-result', '/rpe', '/history', '/activity-detail']);
+    expect(new Set(Object.values(routes)).size).toBe(10);
   });
 });
