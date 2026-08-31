@@ -4,6 +4,7 @@ import { configureDatabaseConnection, type DatabaseAdapter } from './adapter';
 import { ExpoSQLiteAdapter } from './expo-adapter';
 import { runMigrations } from './migrations';
 import { bootstrapLocalUser, seedAppPreferences, seedLookups } from './seeds';
+import { LookupRepository } from './repositories/lookups';
 
 let databasePromise: Promise<DatabaseAdapter> | undefined;
 let localUserId: number | undefined;
@@ -17,6 +18,7 @@ export async function initializeDatabase(): Promise<DatabaseAdapter> {
     await seedLookups(database);
     await seedAppPreferences(database);
     localUserId = await bootstrapLocalUser(database);
+    await new LookupRepository(database).carregar();
     return database;
   })();
   return databasePromise;
@@ -29,4 +31,6 @@ export function getLocalUserId(): number {
 
 export type { DatabaseAdapter } from './adapter';
 export * from './dates';
+export * from './repositories';
+export * from './transaction';
 export * from './types';
