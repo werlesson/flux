@@ -8,6 +8,8 @@ O build do Flux é organizado em **21 fases**, sempre **fundação antes de flux
 
 O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. A **fase 14 (mapa do percurso)** é deliberadamente isolada porque `expo-maps` está em alpha e a chave do Google Maps ainda não foi provisionada — é a única fase que pode ser cortada sem tocar nas demais, degradando as telas 08 e 12 para o estado "sem percurso para exibir" que os design refs já especificam. Os limiares do filtro de GPS entram com **defaults provisórios documentados em um módulo único**, com os testes escritos contra os limiares configurados e não contra números fixos; a **fase 20** é a calibração em campo que fixa os valores definitivos. Cada fase (pai + subfases) é dimensionada para uma sessão de agente e é referenciada por número quando entregue à implementação.
 
+**Execução automática × execução humana.** As fases 1 a 19 são implementáveis e verificáveis por sessão de agente: nenhum critério de aceite delas depende de hardware conectado ou de ação física. Toda validação que exige um aparelho Android — instalação do build, renderização do mapa, resistência à otimização de bateria, modo avião, sinal de GPS real — vive na **fase 21**, e a calibração em campo do filtro vive na **fase 20**. Num run automatizado a execução vai naturalmente até a fase 19 e para na 20: esse é o ponto de entrega do bastão para o desenvolvedor, não uma falha.
+
 **Conventions:**
 - `[ ]` pending · `[x]` done in the codebase.
 - Phases and sub-phases are numbered (`Phase 1`, `Phase 5.3`) for reference by AI agents.
@@ -23,12 +25,13 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 1.1: Dependências e configuração do Expo
 
-- [ ] **Task:** Instalar as dependências de runtime do Flux via `npx expo install`
+- [x] **Task:** Instalar as dependências de runtime do Flux via `npx expo install`
   - **Acceptance criteria:**
     - `expo-location`, `expo-task-manager`, `expo-sqlite`, `expo-speech` e `expo-haptics` constam em `apps/mobile/package.json` em versões compatíveis com o SDK 57
     - `pnpm install` completa sem conflito de peer dependencies
-    - O app inicia no device sem erro de módulo nativo ausente
+    - `npx tsc --noEmit` passa limpo com as novas dependências
     - `expo-maps` **não** é instalado aqui — pertence à fase 14, que é isolável
+    - A abertura do app em device é verificada na **fase 21**, não aqui — nenhum critério desta fase depende de hardware conectado
   - **Traces:** Tech Stack (project-description.md)
 
 - [ ] **Task:** Configurar `app.json` com a identidade Flux e as permissões Android de localização
@@ -40,11 +43,12 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - Nenhuma configuração de iOS é adicionada — o MVP é Android apenas
   - **Traces:** US-6.1, workflow 8 (project-description.md)
 
-- [ ] **Task:** Gerar e documentar o development build Android
+- [x] **Task:** Gerar e documentar o development build Android
   - **Acceptance criteria:**
-    - `npx expo prebuild` gera o projeto nativo sem erro e o build instala em device físico
+    - `npx expo prebuild` completa sem erro e gera o diretório `android/`
+    - O `AndroidManifest.xml` gerado declara o `android.package` configurado e as cinco permissões de localização (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`)
     - O `README.md` de `apps/mobile/` documenta o comando de build e registra explicitamente que **Expo Go não é suportado** (localização em background não funciona nele)
-    - O app abre no development build com o menu de dev acessível
+    - A instalação e a abertura do build em device físico são verificadas na **fase 21**, não aqui
   - **Traces:** Development Build (project-description.md), US-6.1
 
 - [x] **Task:** TypeScript em modo `strict` com alias `@/*` → `./src/*`
@@ -62,7 +66,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 1.2: Identidade visual e limpeza do template
 
-- [ ] **Task:** Aplicar os assets de marca ao ícone, adaptive icon e splash
+- [x] **Task:** Aplicar os assets de marca ao ícone, adaptive icon e splash
   - **Acceptance criteria:**
     - `app.json` aponta o ícone para o asset derivado de `brand/flux-icon.png` no lugar do `icon.png` do template
     - `android.adaptiveIcon` usa o símbolo Flux com fundo na paleta Solar, não o `#E6F4FE` do template
@@ -71,7 +75,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/README.md (seção Brand), .spec/init/design/brand/flux-icon.png
   - **Traces:** design/README.md (Brand — "o ícone ainda não está ligado ao app")
 
-- [ ] **Task:** Carregar as fontes Barlow e JetBrains Mono
+- [x] **Task:** Carregar as fontes Barlow e JetBrains Mono
   - **Acceptance criteria:**
     - As duas famílias são carregadas via `expo-font` antes de esconder o splash
     - Barlow disponível ao menos nos pesos usados nos design refs (incluindo 600 do lockup)
@@ -80,7 +84,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/README.md (Convenções visuais — Tipografia)
   - **Traces:** design/README.md (Convenções visuais)
 
-- [ ] **Task:** Remover o scaffolding do template do `create-expo-app`
+- [x] **Task:** Remover o scaffolding do template do `create-expo-app`
   - **Acceptance criteria:**
     - `src/app/explore.tsx`, `src/components/app-tabs.tsx`, `animated-icon.*`, `web-badge.tsx`, `hint-row.tsx`, `external-link.tsx` e `ui/collapsible.tsx` são removidos ou substituídos
     - Assets do tutorial (`react-logo*`, `expo-badge*`, `expo-logo`, `tutorial-web`, `logo-glow`) removidos de `assets/images/`
@@ -91,7 +95,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 1.3: Tooling de testes e qualidade
 
-- [ ] **Task:** Instalar e configurar `jest-expo` como runner de testes
+- [x] **Task:** Instalar e configurar `jest-expo` como runner de testes
   - **Acceptance criteria:**
     - `jest-expo`, `jest` e `@types/jest` instalados como devDependencies
     - Preset `jest-expo` configurado com `transformIgnorePatterns` cobrindo os pacotes `expo-*` e `react-native`
@@ -99,14 +103,15 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - Um teste smoke roda e passa com `pnpm test`
   - **Traces:** Tech Stack (project-description.md — "nenhum runner configurado hoje")
 
-- [ ] **Task:** Criar os scripts de teste e o mock base dos módulos nativos
+- [x] **Task:** Criar os scripts de teste e o mock base dos módulos nativos
   - **Acceptance criteria:**
     - Scripts `test` e `test:watch` existem em `package.json`
     - Mocks base para `expo-location`, `expo-task-manager`, `expo-speech` e `expo-haptics` permitem testar a lógica de domínio sem device
-    - `expo-sqlite` roda em memória nos testes, sem mock, para que os testes de repositório exercitem SQL real
+    - Os testes de repositório rodam contra um SQLite **real em memória**, sem mock, exercitando SQL de verdade — hoje via `DatabaseSync` do `node:sqlite`, porque `expo-sqlite` é módulo nativo e não carrega sob Jest
+    - **Consequência a resolver na fase 2:** o driver de teste (`node:sqlite`) e o de produção (`expo-sqlite`) têm APIs diferentes (`prepare`/`exec` × `runAsync`/`getAllAsync`). A fase 2.1 deve isolar o acesso atrás de um adaptador fino, para que o mesmo SQL rode nos dois — senão os testes de migração validam um caminho que a aplicação não usa
   - **Traces:** US-3.1, US-4.1 (ambas exigem cobertura por testes automatizados)
 
-- [ ] **Task:** Configurar lint e formatação
+- [x] **Task:** Configurar lint e formatação
   - **Acceptance criteria:**
     - `pnpm lint` roda `expo lint` sem erro no código remanescente após a limpeza
     - Regras de import ordenado e uso do alias `@/*` aplicadas
@@ -125,6 +130,8 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - Abre o banco com `openDatabaseAsync` e expõe uma instância única para o app
     - `PRAGMA foreign_keys = ON` é aplicado em toda conexão — sem isso as cascatas do schema não valem
     - `PRAGMA journal_mode = WAL` habilitado para suportar escrita frequente durante a corrida
+    - O acesso é isolado atrás de um **adaptador fino** com uma interface única (`exec`, `run`, `all`, `transaction`), implementada duas vezes: sobre `expo-sqlite` na aplicação e sobre `node:sqlite` (`DatabaseSync`, em memória) nos testes
+    - Todo SQL do projeto é escrito contra essa interface — nenhuma camada acima importa `expo-sqlite` diretamente, para que o SQL testado seja literalmente o SQL executado em produção
     - O módulo é utilizável em ambiente de teste com banco em memória
   - **Feature tests:** `foreign keys estão ativas na conexão` → asserta que uma inserção com FK inválida falha; `journal_mode retorna WAL`
   - **Traces:** Notes & Conventions (database-schema.md), US-6.2
@@ -871,7 +878,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Acceptance criteria:**
     - O componente consome exclusivamente o estado calculado na fase 6, sem recalcular nada
     - A mudança de estado é visivelmente perceptível sem o usuário interpretar números
-    - Os três estados são alcançáveis em teste manual forçando as condições
+    - O componente renderiza os três estados a partir do estado recebido, coberto por teste de render que injeta cada um dos três — a verificação em campo, com sinal real, é da fase 21
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Estados)
   - **Traces:** US-3.2
 
@@ -1006,9 +1013,9 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 - [ ] **Task:** Tornar a notificação não dispensável enquanto a atividade existir
   - **Acceptance criteria:**
-    - A notificação é `ongoing` e não pode ser deslizada para fora
+    - A notificação é declarada `ongoing` na configuração do foreground service e não pode ser deslizada para fora
     - Ela desaparece somente quando a atividade é finalizada ou descartada
-    - Ela sobrevive às otimizações de bateria dos fabricantes testados, ou o desvio é documentado
+    - A resistência às otimizações de bateria por fabricante é verificada na **fase 21**, que já cobre esse cenário
   - **Design ref:** .spec/init/design/15-background-notification.md (Notas de implementação)
   - **Traces:** US-6.1
 
@@ -1196,7 +1203,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Acceptance criteria:**
     - Sem atividades: título `Nenhuma atividade registrada`, o texto do design ref e o botão `Iniciar corrida livre` ao pé, que aciona o mesmo fluxo da tela 01
     - A lista lê apenas SQLite local e não exibe nenhum indicador de rede
-    - Com o aparelho em modo avião, a tela é idêntica à do estado normal
+    - O código da tela não faz nenhuma chamada de rede — verificável por inspeção e por teste que falha se qualquer cliente HTTP for invocado; a verificação em modo avião, no aparelho, é da **fase 21**
   - **Design ref:** .spec/init/design/11-history-list.md (Estados)
   - **Traces:** US-8.1, US-2.1
 
@@ -1256,8 +1263,9 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Acceptance criteria:**
     - `expo-maps` instalado na versão compatível com o SDK 57 e a versão exata fixada
     - `android.config.googleMaps.apiKey` configurado, com a chave fora do versionamento
-    - O development build é regerado e o mapa renderiza em device
-    - Ausência de chave produz o estado degradado, nunca um crash
+    - `npx expo prebuild` completa sem erro após a inclusão do módulo
+    - Ausência de chave produz o estado degradado, nunca um crash — coberto por teste
+    - A renderização do mapa em device é verificada na **fase 21**; a chave em si é provisionamento externo e não pode ser produzida por uma sessão de implementação
   - **Traces:** US-7.2, Open Questions (project-description.md — chave do Google Maps)
 
 - [ ] **Task:** Encapsular a renderização do mapa em um componente único
@@ -1677,8 +1685,8 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - `expo-speech` configurado com locale `pt-BR`
     - A fala funciona com a tela bloqueada e com o app em background
     - Falas em sequência são enfileiradas, não sobrepostas
-    - A ausência de voz pt-BR instalada no aparelho degrada sem quebrar a atividade
-  - **Feature tests:** `falas concorrentes são enfileiradas e não sobrepostas`; `ausência de voz pt-BR não interrompe a atividade`
+    - Quando a chamada ao `expo-speech` falha ou a voz pt-BR não está disponível, a atividade continua normalmente e a falha é registrada — caminho de código exercitável com mock, sem depender do aparelho
+  - **Feature tests:** `falas concorrentes são enfileiradas e não sobrepostas`; `falha do expo-speech não interrompe a atividade` → força a rejeição da chamada e asserta que o motor e a coleta seguem
   - **Traces:** US-5.1, US-6.1
 
 - [ ] **Task:** Implementar a verbalização de números por extenso
@@ -1841,6 +1849,8 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Acceptance criteria:**
     - Build assinado gerado a partir do estado verificado, com ícone e nome Flux corretos
     - `app.json` com versão de release e todas as permissões declaradas
+    - O development build instala e abre em device físico, com o menu de dev acessível e sem erro de módulo nativo ausente — validação movida da fase 1, que não tem como produzi-la
+    - O mapa do percurso renderiza em device com a chave do Google Maps provisionada — validação movida da fase 14
     - O build instala e roda em aparelho limpo, sem estado prévio, criando o banco do zero na primeira abertura
     - As migrações rodam do zero sem erro no primeiro start
   - **Traces:** US-2.1, US-6.1, Development Build (project-description.md)
