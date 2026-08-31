@@ -1,5 +1,6 @@
 jest.mock('expo-location', () => ({
   Accuracy: { BestForNavigation: 6, High: 4 },
+  PermissionStatus: { DENIED: 'denied', GRANTED: 'granted', UNDETERMINED: 'undetermined' },
   getBackgroundPermissionsAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(),
   getForegroundPermissionsAsync: jest.fn(),
