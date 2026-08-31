@@ -15,6 +15,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { initializeDatabase } from '@/database';
+
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -30,6 +32,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    void initializeDatabase();
     if (fontsLoaded) {
       void SplashScreen.hideAsync();
     }
