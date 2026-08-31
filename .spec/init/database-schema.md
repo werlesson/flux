@@ -8,6 +8,8 @@ O modelo gira em torno de duas árvores. A do **planejamento**: uma **training_s
 
 **activity_steps é um snapshot, não uma referência viva.** Ele copia tipo, instrução e duração planejada da etapa no momento da execução, e guarda a duração real e o status de execução. É o que permite editar um treino sem alterar o histórico (US-1.3) e registrar etapas puladas ou não realizadas (US-4.3, US-4.4).
 
+Fora dessas duas árvores existe uma única tabela de configuração, **app_preferences**, que guarda as preferências de locução e vibração exigidas pela US-5.1 como pares chave-valor. Ela não se relaciona com nenhuma outra tabela.
+
 Convenções em vigor: **nenhum ORM** está instalado — o projeto usa `expo-sqlite` com SQL direto — então vale o perfil padrão: tabelas no plural em `snake_case`, `id bigint [pk, increment]`, chaves estrangeiras `<singular>_id`, e `created_at`/`updated_at` nas tabelas de domínio. **Nenhum campo enum**: todo valor categórico vive numa tabela lookup com FK. **Soft delete apenas em `training_sessions`** (`deleted_at`); atividades, pontos e splits são apagados de verdade, conforme o princípio de privacidade da descrição e a US-8.4.
 
 ## Schema (DBML)
@@ -234,6 +236,24 @@ Table activity_steps {
     (activity_id, position) [unique]
   }
 }
+
+// ─────────────────────────────────────────────
+// Domain — configuração local do dispositivo
+// ─────────────────────────────────────────────
+
+// Preferências do app em pares chave-valor (US-5.1): locução e vibração
+// ligáveis de forma independente, persistindo entre atividades. Chave-valor
+// para não exigir uma migração a cada preferência nova. Não carrega user_id
+// de propósito — são preferências do aparelho, não dados do usuário.
+Table app_preferences {
+  id bigint [pk, increment]
+  key varchar [unique, not null]
+  // escalar codificado em JSON, para que boolean, número e texto façam
+  // roundtrip com o tipo preservado em vez de virar string solta
+  value text [not null]
+  created_at timestamp
+  updated_at timestamp
+}
 ```
 
 ## Relationships
@@ -247,6 +267,7 @@ Table activity_steps {
 - Uma **activity** tem muitos **activity_points**, muitos **activity_splits** e muitos **activity_steps**.
 - Um **activity_point** opcionalmente referencia um **gps_rejection_reason** — preenchido apenas quando `is_valid = false`.
 - Um **activity_step** pertence a um **step_type** e a um **step_execution_status**, e opcionalmente referencia o **training_step** que lhe deu origem (nullable, para sobreviver à exclusão do treino).
+- **app_preferences** não se relaciona com nada: não tem chave estrangeira e nenhuma tabela aponta para ela. É configuração do aparelho, lida por chave.
 - Não há relacionamento muitos-para-muitos no modelo — nenhuma tabela pivot é necessária.
 
 ## Lookup Table Seeds
@@ -293,6 +314,13 @@ Table activity_steps {
 | `position_jump` | Salto abrupto de posição |
 | `stale_sample` | Intervalo entre medições fora do aceitável |
 
+**app_preferences** — não é tabela lookup, mas nasce semeada com os padrões da tela 14, onde os dois interruptores começam ativos:
+
+| key | value | significado |
+|---|---|---|
+| `audio_cues_enabled` | `true` | Locução TTS em `pt-BR` ligada |
+| `haptic_cues_enabled` | `true` | Vibração dos avisos ligada |
+
 ## Notes & Conventions
 
 - **Sem ORM.** Nenhum ORM está instalado no projeto; `expo-sqlite` usa SQL direto. O schema segue o perfil de convenções padrão, não o de um framework específico.
@@ -308,6 +336,9 @@ Table activity_steps {
 - **Paces são armazenados em segundos por quilômetro** (inteiro), não como texto `mm:ss`. Formatação é responsabilidade da camada de apresentação.
 - **Distâncias em metros**, durações em segundos. A descrição exibe km e `mm:ss`, mas converter na apresentação evita erro de arredondamento acumulado.
 - **`rpe` é `null` por decisão de produto** (US-7.3): a atividade pode ser salva sem avaliação e completada depois. Uma atividade com `rpe IS NULL` é o que a US-8.1 chama de "pendente de avaliação". A faixa 1–10 é validada pela aplicação, não pelo banco.
+- **`app_preferences` é chave-valor de propósito.** O MVP tem duas preferências (locução e vibração), mas o formato evita uma migração a cada preferência nova, e o custo é baixo porque nada consulta essa tabela por outro critério que não a chave. O `value` guarda um escalar **codificado em JSON** — sem isso, `false` e `"false"` ficariam indistinguíveis num `TEXT`. É a única tabela do schema que abre mão de tipagem por coluna, e o faz porque não é dado de domínio.
+- **`app_preferences` não tem `user_id`.** As preferências são do aparelho, não do usuário: a US-5.1 e o design ref da tela 14 as descrevem como locais, e desligar a locução num celular não deveria desligá-la em outro. Por isso ela fica fora do escopo da sincronização futura que motivou a tabela `users`.
+- **A persistência das preferências fica em SQLite, não em AsyncStorage.** Decisão do desenvolvedor, para manter um único mecanismo de persistência no app e não acrescentar dependência fora da Tech Stack — o `expo-sqlite` já está no projeto.
 - **Conceitos não persistidos:** **Motor de treino** e **Filtro de GPS** são componentes de runtime, não entidades — mas o resultado do filtro é persistido em `activity_points.is_valid` e `gps_rejection_reasons`. **Pace** e **elapsed_time vs moving_time** não são tabelas: são colunas materializadas em `activities` e `activity_splits`. **Auto-pause** está fora do MVP e não tem representação. **Development Build** é preocupação de build, não de dados. **Repositório git aninhado** apareceu na varredura de conceitos por ser um item de Open Questions da descrição, não um conceito de domínio — e já foi resolvido.
 
 ## Open Questions
