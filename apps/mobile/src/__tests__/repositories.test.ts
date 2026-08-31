@@ -32,6 +32,22 @@ describe('infraestrutura de repositório', () => {
     database.close();
   });
 
+  it('rollback interno pode ser capturado e a transação externa ainda faz commit', async () => {
+    const { database } = await ready();
+    await withTransaction(database, async tx => {
+      await tx.run("INSERT INTO users(name,created_at,updated_at) VALUES('antes','x','x')");
+      await expect(withTransaction(tx, async nested => {
+        await nested.run("INSERT INTO users(name,created_at,updated_at) VALUES('revertido','x','x')");
+        throw new Error('falha interna');
+      })).rejects.toThrow('falha interna');
+      await tx.run("INSERT INTO users(name,created_at,updated_at) VALUES('depois','x','x')");
+    });
+    expect((await database.all<{ name: string | null }>(
+      'SELECT name FROM users WHERE name IS NOT NULL ORDER BY id',
+    )).map(row => row.name)).toEqual(['antes', 'depois']);
+    database.close();
+  });
+
   it('lookups falham explicitamente e não consultam por slug depois da carga', async () => {
     const { database } = await ready(); const spy = jest.spyOn(database, 'all');
     const repository = new LookupRepository(database); await repository.carregar();
@@ -49,6 +65,21 @@ describe('infraestrutura de repositório', () => {
     expect(await preferences.ler('nova_preferencia', 42)).toBe(42);
     const calls = spy.mock.calls.length; await preferences.ler('audio_cues_enabled', true); expect(spy).toHaveBeenCalledTimes(calls);
     expect((await database.all<{ count: number }>("SELECT COUNT(*) count FROM app_preferences WHERE key='audio_cues_enabled'"))[0]!.count).toBe(1);
+    database.close();
+  });
+
+  it('carregamento concorrente de preferências consulta o banco uma vez', async () => {
+    const { database } = await ready();
+    const spy = jest.spyOn(database, 'all');
+    const first = new AppPreferencesRepository(database);
+    const second = new AppPreferencesRepository(database);
+
+    await Promise.all([
+      first.ler('audio_cues_enabled', false),
+      second.ler('haptic_cues_enabled', false),
+    ]);
+
+    expect(spy.mock.calls.filter(([sql]) => sql === 'SELECT key, value FROM app_preferences')).toHaveLength(1);
     database.close();
   });
 });

@@ -41,7 +41,12 @@ export class NodeSQLiteAdapter implements DatabaseAdapter {
       this.database.exec(nested ? `RELEASE SAVEPOINT ${savepoint}` : 'COMMIT');
       return result;
     } catch (error) {
-      this.database.exec(nested ? `ROLLBACK TO SAVEPOINT ${savepoint}` : 'ROLLBACK');
+      if (nested) {
+        this.database.exec(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+        this.database.exec(`RELEASE SAVEPOINT ${savepoint}`);
+      } else {
+        this.database.exec('ROLLBACK');
+      }
       throw error;
     } finally {
       this.transactionDepth--;
