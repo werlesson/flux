@@ -3,6 +3,18 @@
 **US cobertas:** US-6.1
 **Imagem:** ./15-background-notification.png
 
+## ⚠️ Decisão de escopo — ações e estados adiados para depois do MVP
+
+O `expo-location` expõe **apenas quatro campos** para a notificação do foreground service: `notificationTitle`, `notificationBody`, `notificationColor` e `killServiceOnDestroy`. Não há suporte a botões de ação, nem à flag `ongoing`, nem forma documentada de atualizar o conteúdo com o serviço em execução.
+
+A única saída para entregar esta tela como desenhada seria **patchear o código Kotlin do `expo-location`** — o que foi tentado e descartado: acopla o projeto a um fork de biblioteca nativa, quebra a cada atualização do SDK, e exige `expo-notifications` só para construir os intents.
+
+**Fica no MVP:** a notificação persistente com título e métricas, definida ao iniciar a atividade.
+
+**Fica para depois do MVP:** os botões `PAUSAR`/`RETOMAR` e `FINALIZAR`, a linha de contexto atualizada em tempo real, e as variações por estado (pausada, sem sinal). O corredor desbloqueia o aparelho para controlar a atividade.
+
+O restante deste documento descreve o alvo completo e permanece válido como referência para quando o tema for retomado.
+
 ## Propósito
 Mostrar que a atividade continua com o celular no bolso, e dar controle sem desbloquear — a notificação do foreground service exigida no Android.
 

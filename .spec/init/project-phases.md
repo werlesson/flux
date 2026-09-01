@@ -900,7 +900,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 **Goal:** Fechar e persistir um split a cada quilômetro completo, sobrevivente a encerramento inesperado. · **Depends on:** Phase 7 · **Covers:** workflow 7, `activity_splits`
 
-- [ ] **Task:** Implementar o detector de quilômetro completo
+- [x] **Task:** Implementar o detector de quilômetro completo
   - **Acceptance criteria:**
     - O cruzamento de cada múltiplo de 1000 m de distância acumulada dispara o fechamento de um split
     - O detector usa a distância acumulada por pontos válidos, não a distância bruta das amostras
@@ -908,7 +908,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `cruzar 1000 m fecha o split 1`; `um segmento de 2500 m a partir de 0 fecha os splits 1 e 2`; `distância que não cruza o múltiplo não fecha split`
   - **Traces:** US-2.5
 
-- [ ] **Task:** Implementar o cálculo de duração e pace do split
+- [x] **Task:** Implementar o cálculo de duração e pace do split
   - **Acceptance criteria:**
     - `duration_seconds` do split é o tempo em movimento decorrido desde o fechamento do split anterior (ou desde o início, para o primeiro)
     - `pace_seconds_per_km` é derivado dessa duração para exatamente 1 km
@@ -916,7 +916,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `pace do split bate com a duração do quilômetro`; `pausa no meio do quilômetro não infla o pace do split`
   - **Traces:** US-2.5, US-7.1
 
-- [ ] **Task:** Persistir o split no momento em que fecha
+- [x] **Task:** Persistir o split no momento em que fecha
   - **Acceptance criteria:**
     - A linha em `activity_splits` é gravada imediatamente no fechamento, não ao final da atividade
     - Um encerramento forçado logo após o fechamento preserva o split no banco
@@ -924,7 +924,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `split existe no banco antes de a atividade terminar`; `uma corrida de 3,18 km produz exatamente 3 splits persistidos` (resultado esperado da US-2.5); `tentativa de split duplicado não interrompe a atividade`
   - **Traces:** US-2.5, US-6.2
 
-- [ ] **Task:** Garantir que a distância parcial não gera split
+- [x] **Task:** Garantir que a distância parcial não gera split
   - **Acceptance criteria:**
     - Os metros após o último quilômetro completo não produzem linha em `activity_splits`
     - A distância parcial continua contando para `distance_meters` da atividade
@@ -932,7 +932,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `corrida de 800 m não gera split`; `corrida de 3,18 km não gera um quarto split`
   - **Traces:** US-2.5, US-7.1
 
-- [ ] **Task:** Recalcular `best_pace_seconds_per_km` a cada split fechado
+- [x] **Task:** Recalcular `best_pace_seconds_per_km` a cada split fechado
   - **Acceptance criteria:**
     - O melhor pace da atividade é atualizado no fechamento de cada split
     - Atividade sem split mantém `best_pace_seconds_per_km` nulo
@@ -940,7 +940,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `melhor pace acompanha o menor split`; `atividade sem split mantém best_pace nulo`
   - **Traces:** US-7.1
 
-- [ ] **Task:** Preservar a continuidade do quilômetro parcial na retomada
+- [x] **Task:** Preservar a continuidade do quilômetro parcial na retomada
   - **Acceptance criteria:**
     - Ao retomar de uma pausa, o quilômetro em curso continua acumulando a partir de onde parou
     - Ao recuperar uma atividade interrompida, o progresso do quilômetro parcial é reconstruído a partir dos pontos e splits persistidos
@@ -948,7 +948,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `retomada não reemite split já fechado`; `progresso parcial do quilômetro é reconstruído a partir do banco`
   - **Traces:** US-2.4, US-2.5, US-6.3
 
-- [ ] **Task:** Expor os splits à camada de UI
+- [x] **Task:** Expor os splits à camada de UI
   - **Acceptance criteria:**
     - Os splits ficam disponíveis para a tela de resultado e para o detalhe do histórico, ordenados por quilômetro
     - O melhor split é identificável para o destaque em ouro
@@ -991,38 +991,28 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 10.2: Notificação persistente
 
+> **Limite da plataforma.** O `expo-location` expõe apenas quatro campos para a notificação do foreground service — `notificationTitle`, `notificationBody`, `notificationColor` e `killServiceOnDestroy`. Não há botões de ação, não há flag `ongoing`, e não há forma documentada de atualizar o conteúdo com o serviço rodando. **Não patchear a biblioteca**: essa via foi tentada e descartada por acoplar o projeto a um fork nativo que quebra a cada atualização do SDK. Ações, linha de contexto ao vivo e variações por estado ficam para depois do MVP — ver `.spec/init/design/15-background-notification.md` e as Open Questions.
+
 - [ ] **Task:** Implementar o conteúdo da notificação persistente
   - **Acceptance criteria:**
-    - Identificação `Flux`, título `Atividade em andamento`, linha de métricas `2,31 km · 00:18:42`
-    - Linha de contexto `Corrida · 3 de 6 · faltam 01:12` quando há treino estruturado
-    - O tempo exibido deriva de timestamps, como na tela de atividade
-    - O conteúdo é atualizado em intervalo fixo e barato, sem acordar o app inteiro a cada segundo
-  - **Design ref:** .spec/init/design/15-background-notification.png
+    - `notificationTitle` e `notificationBody` são passados no `foregroundService` de `startLocationUpdatesAsync` ao iniciar a atividade
+    - O título identifica o app e o estado (`Flux · Atividade em andamento`); o corpo distingue a origem: `Corrida livre` ou o nome do treino
+    - `notificationColor` usa o coral de ação da paleta Solar
+    - Nenhum conteúdo depende de atualização em tempo real — o texto é definido uma vez, ao iniciar
+    - A implementação **não** introduz uma segunda notificação paralela à do serviço
+  - **Feature tests:** `as opções do foreground service carregam título e corpo`; `o corpo traz o nome do treino em atividade estruturada e "Corrida livre" na livre`
+  - **Design ref:** .spec/init/design/15-background-notification.md (Decisão de escopo)
   - **Traces:** US-6.1
 
-- [ ] **Task:** Implementar os estados da notificação
+- [ ] **Task:** Garantir o ciclo de vida da notificação
   - **Acceptance criteria:**
-    - Corrida livre omite a linha de contexto, mantendo distância e tempo
-    - Pausada: título passa a `Atividade pausada`, a ação `PAUSAR` passa a `RETOMAR` e as métricas ficam congeladas
-    - Sem sinal: a linha de contexto ganha o sufixo `· sem sinal` e o tempo continua avançando
-  - **Design ref:** .spec/init/design/15-background-notification.md (Estados)
-  - **Traces:** US-6.1, US-3.3
-
-- [ ] **Task:** Implementar as ações da notificação
-  - **Acceptance criteria:**
-    - `PAUSAR`/`RETOMAR` e `FINALIZAR` produzem exatamente o mesmo efeito dos botões da tela de atividade, sem desbloquear o aparelho
-    - `FINALIZAR` encerra a coleta e deixa a atividade pronta para a tela de resultado na próxima abertura
-    - Tocar no corpo da notificação abre a tela de atividade correspondente
-  - **Design ref:** .spec/init/design/15-background-notification.md (Interações)
-  - **Traces:** US-6.1, US-2.4
-
-- [ ] **Task:** Tornar a notificação não dispensável enquanto a atividade existir
-  - **Acceptance criteria:**
-    - A notificação é declarada `ongoing` na configuração do foreground service e não pode ser deslizada para fora
-    - Ela desaparece somente quando a atividade é finalizada ou descartada
+    - A notificação sobe junto com o foreground service ao iniciar a atividade
+    - Ela desaparece quando a atividade é finalizada ou descartada, porque o serviço é encerrado em ambos os caminhos
+    - Encerrar o serviço é idempotente: chamar duas vezes não lança
     - A resistência às otimizações de bateria por fabricante é verificada na **fase 21**, que já cobre esse cenário
-  - **Design ref:** .spec/init/design/15-background-notification.md (Notas de implementação)
-  - **Traces:** US-6.1
+  - **Feature tests:** `finalizar encerra a coleta e derruba o serviço`; `descartar a atividade também derruba o serviço`; `encerrar duas vezes não lança`
+  - **Design ref:** .spec/init/design/15-background-notification.md (Decisão de escopo)
+  - **Traces:** US-6.1, US-7.4
 
 ---
 
@@ -1865,6 +1855,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ## Open Questions
 
+- **Ações e estados dinâmicos da notificação persistente ficam para depois do MVP** (fase 10.2). O `expo-location` expõe só quatro campos para a notificação do foreground service e não suporta botões, flag `ongoing` nem atualização do conteúdo em execução. A única via seria patchear o Kotlin da biblioteca — tentada e **descartada**, por acoplar o projeto a um fork nativo que quebra a cada atualização do SDK e exigir `expo-notifications` só para montar os intents. No MVP o corredor desbloqueia o aparelho para pausar ou finalizar. Reavaliar depois do primeiro release, com aparelho em mãos, se a falta dos botões incomoda o suficiente para justificar o custo.
 - **Limiares do filtro de GPS.** Os valores entram como defaults provisórios na fase 6.1 e só são fixados na fase 20. Enquanto isso, a distância medida pelo app não é confiável para comparação com outros aparelhos.
 - **Frequência de coleta do GPS e cadência de gravação em SQLite.** Ambas entram com um valor configurável único, mas o trade-off entre precisão e bateria (coleta) e entre resiliência e volume de escrita (gravação) só pode ser resolvido com a medição da fase 21.
 - **`expo-maps` em alpha.** A fase 14 isola o risco, mas a decisão de trocar por `react-native-maps` continua em aberto e deve ser reavaliada antes de a fase começar.
