@@ -3,6 +3,7 @@ import type { Activity, ActivityStatusSlug, ActivityTypeSlug } from '../types';
 import { withTransaction } from '../transaction';
 import { LookupRepository } from './lookups';
 import { dates, now } from './mappers';
+import type { ActivityStepSnapshot } from './activity-steps';
 
 export interface CreateActivityInput { user_id: number; activity_type_slug: ActivityTypeSlug; started_at: Date; training_session_id?: number | null; training_session_name?: string | null }
 export interface ActivityMetrics { finished_at?: Date | null; activity_status_slug?: ActivityStatusSlug; elapsed_duration_seconds: number; moving_duration_seconds: number; distance_meters: number; average_pace_seconds_per_km?: number | null; best_pace_seconds_per_km?: number | null }
@@ -21,6 +22,15 @@ export class ActivitiesRepository {
     }
     const result = await this.database.run('INSERT INTO activities(user_id,activity_type_id,activity_status_id,training_session_id,training_session_name,started_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)', [input.user_id, typeId, statusId, input.training_session_id ?? null, trainingName, now(input.started_at), now(at), now(at)]);
     return (await this.buscarPorId(result.lastInsertRowId))!;
+  }
+  async criarComEtapas(input: CreateActivityInput, steps: ActivityStepSnapshot[], at = new Date()): Promise<Activity> {
+    return withTransaction(this.database, async tx => {
+      const repository = new ActivitiesRepository(tx);
+      const activity = await repository.criar(input, at);
+      const pendingId = await new LookupRepository(tx).idPorSlug('step_execution_statuses', 'not_performed');
+      for (const step of steps) await tx.run('INSERT INTO activity_steps(activity_id,training_step_id,step_type_id,step_execution_status_id,position,repetition_index,planned_duration_seconds,instructions,started_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)', [activity.id,step.training_step_id ?? null,step.step_type_id,pendingId,step.position,step.repetition_index,step.planned_duration_seconds,step.instructions ?? null,step.position===0?now(input.started_at):null,now(at),now(at)]);
+      return activity;
+    });
   }
   async buscarPorId(id: number): Promise<Activity | null> { const [row] = await this.database.all<Record<string, unknown>>('SELECT * FROM activities WHERE id=?', [id]); return row ? this.map(row) : null; }
   async buscarEmAndamento(): Promise<Activity | null> { const [row] = await this.database.all<Record<string, unknown>>('SELECT * FROM activities WHERE finished_at IS NULL ORDER BY started_at DESC LIMIT 1'); return row ? this.map(row) : null; }

@@ -86,7 +86,7 @@ describe('fase 11 — recuperação de atividade interrompida', () => {
 
   it('etapas restantes viram not_performed', async () => {
     const { database, userId } = await setup(); const training = await structured(database, userId); const engine = new ActivityEngine(database, { clock: { now: () => 0 } }); const activity = await engine.startStructuredRun(userId, training.id, training.name); await engine.finish(new Date(1_000));
-    expect(await new ActivityStepsRepository(database).contarPorStatus(activity.id)).toEqual({ completed: 0, skipped: 0, not_performed: 4 }); database.close();
+    expect(await new ActivityStepsRepository(database).contarPorStatus(activity.id)).toEqual({ completed: 0, skipped: 1, not_performed: 3 }); database.close();
   });
 
   it('a atividade passa a aparecer no histórico', async () => {

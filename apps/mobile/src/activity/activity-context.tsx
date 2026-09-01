@@ -9,6 +9,7 @@ import { BACKGROUND_LOCATION_WARNING, setBackgroundGpsConsumer, startLocationTra
 import { LocationPermissions } from '@/location/permissions';
 
 import { ActivityEngine, type ActivityMetricsSnapshot, type ActivityRecoverySnapshot } from './engine';
+import { announceTrainingFinished } from './training-guidance';
 
 interface ActivityContextValue extends ActivityMetricsSnapshot {
   status: ActivityStatusSlug | null;
@@ -16,6 +17,7 @@ interface ActivityContextValue extends ActivityMetricsSnapshot {
   activityId: number | null;
   pendingRecovery: ActivityRecoverySnapshot | null;
   currentStep: ActivityRecoverySnapshot['currentStep'];
+  trainingFinished: boolean;
   startFreeRun(): Promise<void>;
   startStructuredRun(trainingSessionId: number, trainingName: string): Promise<void>;
   ingest(sample: GpsSample): Promise<void>;
@@ -33,6 +35,7 @@ const ActivityContext = createContext<ActivityContextValue | null>(null);
 export function ActivityProvider({ children }: PropsWithChildren) {
   const [engine, setEngine] = useState<ActivityEngine | null>(null);
   const [pendingRecovery, setPendingRecovery] = useState<ActivityRecoverySnapshot | null>(null);
+  const [trainingFinished, setTrainingFinished] = useState(false);
   const [, render] = useState(0);
   const refresh = useCallback(() => render(value => value + 1), []);
 
@@ -44,6 +47,12 @@ export function ActivityProvider({ children }: PropsWithChildren) {
       });
       await restoredEngine.restoreLastActivity();
       if (!mounted) return;
+      restoredEngine.onTrainingFinished(async () => {
+        if (!mounted) return;
+        setTrainingFinished(true);
+        await announceTrainingFinished(database);
+        refresh();
+      });
       setPendingRecovery(await restoredEngine.recoverySnapshot());
       setBackgroundGpsConsumer(sample => restoredEngine.ingest(sample));
       setEngine(restoredEngine);
@@ -55,10 +64,21 @@ export function ActivityProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(refresh, 1_000); // tick apenas solicita render; elapsed vem dos timestamps.
+    let advancing = false;
+    const advanceAndRefresh = async () => {
+      if (advancing || !engine) return;
+      advancing = true;
+      try {
+        await engine.advanceTraining();
+        refresh();
+      } finally {
+        advancing = false;
+      }
+    };
+    const timer = setInterval(() => { void advanceAndRefresh(); }, 1_000);
     const appState = AppState.addEventListener('change', state => {
-      if (state !== 'active') void engine?.onBackground();
-      refresh();
+      if (state === 'active') void advanceAndRefresh();
+      else void engine?.onBackground();
     });
     return () => { clearInterval(timer); appState.remove(); };
   }, [engine, refresh]);
@@ -76,6 +96,7 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     activityId: engine?.id ?? null,
     pendingRecovery,
     currentStep: engine?.currentStep ?? null,
+    trainingFinished,
     startFreeRun: () => action(async item => {
       const permissions = await new LocationPermissions().checkAndRequest();
       if (permissions.foreground !== 'concedida') throw new Error('Permissão de localização em primeiro plano é obrigatória');
@@ -89,6 +110,7 @@ export function ActivityProvider({ children }: PropsWithChildren) {
       }
     }),
     startStructuredRun: (trainingSessionId, trainingName) => action(async item => {
+      setTrainingFinished(false);
       const permissions = await new LocationPermissions().checkAndRequest();
       if (permissions.foreground !== 'concedida') throw new Error('Permissão de localização em primeiro plano é obrigatória');
       if (permissions.background !== 'concedida') Alert.alert('Gravação em segundo plano indisponível', BACKGROUND_LOCATION_WARNING);
