@@ -1,6 +1,6 @@
 # Flux — Database Schema
 
-<!-- inputs: project-description.md@sha256:b1fb623c6dee user-stories.md@sha256:1025d7530e38 -->
+<!-- inputs: project-description.md@sha256:95865153b13f user-stories.md@sha256:4c853ddaf0ce -->
 
 ## Overview
 
@@ -150,6 +150,9 @@ Table activities {
   finished_at timestamp [null]
 
   // métricas consolidadas ao finalizar (US-7.1)
+  // tempo de ATIVIDADE: o intervalo entre início e fim menos as pausas manuais
+  // (US-2.4). Não é relógio de parede — esse continua derivável de
+  // finished_at - started_at sempre que for necessário.
   elapsed_duration_seconds integer [not null, default: 0]
   moving_duration_seconds integer [not null, default: 0]
   distance_meters decimal(10,2) [not null, default: 0]
@@ -237,6 +240,23 @@ Table activity_steps {
   }
 }
 
+// Intervalos de pausa manual de uma atividade. É o que permite calcular
+// elapsed_duration_seconds como tempo de atividade e reconstruí-lo após uma
+// recuperação: sem a lista de pausas, o tempo pausado seria indistinguível do
+// tempo parado involuntário (US-2.4, US-6.3).
+Table activity_pause_intervals {
+  id bigint [pk, increment]
+  activity_id bigint [ref: > activities.id, not null]
+  started_at timestamp [not null]
+  // null enquanto a pausa está aberta; preenchido ao retomar ou ao finalizar
+  finished_at timestamp [null]
+  created_at timestamp
+
+  indexes {
+    (activity_id, started_at)
+  }
+}
+
 // ─────────────────────────────────────────────
 // Domain — configuração local do dispositivo
 // ─────────────────────────────────────────────
@@ -264,7 +284,8 @@ Table app_preferences {
 - Um **training_step** pertence a um **step_type**.
 - Uma **activity** pertence a um **activity_type** (corrida livre ou treino estruturado) e a um **activity_status**.
 - Uma **activity** opcionalmente referencia o **training_session** que a originou — a FK é nullable, porque corrida livre não tem treino e porque o treino pode ser excluído depois.
-- Uma **activity** tem muitos **activity_points**, muitos **activity_splits** e muitos **activity_steps**.
+- Uma **activity** tem muitos **activity_points**, muitos **activity_splits**, muitos **activity_steps** e muitos **activity_pause_intervals**.
+- Um **activity_pause_interval** com `finished_at` nulo é a pausa ainda aberta — existe no máximo uma por atividade.
 - Um **activity_point** opcionalmente referencia um **gps_rejection_reason** — preenchido apenas quando `is_valid = false`.
 - Um **activity_step** pertence a um **step_type** e a um **step_execution_status**, e opcionalmente referencia o **training_step** que lhe deu origem (nullable, para sobreviver à exclusão do treino).
 - **app_preferences** não se relaciona com nada: não tem chave estrangeira e nenhuma tabela aponta para ela. É configuração do aparelho, lida por chave.
@@ -327,7 +348,9 @@ Table app_preferences {
 - **Tipos DBML × SQLite.** SQLite não tem `bigint`, `boolean`, `decimal` nem `timestamp` nativos. Na migração real: `bigint` → `INTEGER`, `boolean` → `INTEGER` (0/1), `decimal` → `REAL`, `timestamp` → `TEXT` em ISO-8601 UTC. O DBML aqui é modelagem, não DDL literal.
 - **Nenhum campo enum.** Os cinco conjuntos categóricos (tipo de etapa, tipo e status de atividade, status de execução da etapa, motivo de rejeição de GPS) vivem em tabelas lookup com FK.
 - **Soft delete só em `training_sessions`.** Permite sumir da biblioteca sem quebrar a FK das atividades antigas (US-1.4). Atividades, pontos e splits são hard delete — a US-8.4 exige remover permanentemente o rastro de localização, e o princípio de privacidade da descrição trata percurso como dado sensível.
-- **Exclusão em cascata.** Apagar uma `activity` deve apagar seus `activity_points`, `activity_splits` e `activity_steps` — vale para o descarte na tela de resultado (US-7.4) e para a exclusão pelo histórico (US-8.4).
+- **`elapsed_duration_seconds` é tempo de atividade, não relógio de parede.** Guarda o intervalo entre início e fim **menos as pausas manuais** (US-2.4): durante a pausa o cronômetro exibido congela, e o número do resultado é o mesmo que o corredor viu correndo. O relógio de parede puro segue derivável de `finished_at - started_at`, então nada se perde. A consequência é que `elapsed_duration_seconds - moving_duration_seconds` passa a ser o tempo parado **sem** pausa manual — semáforo, água —, que é exatamente o `TEMPO CAMINHANDO` da tela 08. Com a definição anterior essa diferença misturava pausa manual e parada involuntária, e a decomposição da tela de resultado não fechava.
+- **`activity_pause_intervals` é a fonte da verdade das pausas.** Sem a lista de intervalos não há como recalcular `elapsed_duration_seconds` ao recuperar uma atividade interrompida (US-6.3), nem distinguir tempo pausado de tempo parado. O índice `(activity_id, started_at)` cobre a leitura ordenada; a pausa aberta é a linha com `finished_at IS NULL`.
+- **Exclusão em cascata.** Apagar uma `activity` deve apagar seus `activity_points`, `activity_splits`, `activity_steps` e `activity_pause_intervals` — vale para o descarte na tela de resultado (US-7.4) e para a exclusão pelo histórico (US-8.4).
 - **`activity_steps` é snapshot, não referência.** Copia `step_type_id`, `instructions` e `planned_duration_seconds` no momento da execução. Sem isso, editar um treino reescreveria o histórico, violando a US-1.3.
 - **`training_session_name` duplica o nome do treino** na atividade de propósito. É a única denormalização do schema, e existe para que o histórico continue mostrando a origem depois que o treino for excluído (US-8.1).
 - **Pontos rejeitados são persistidos** com `is_valid = false` e o motivo. É o que torna possível ajustar os limiares do filtro contra corridas reais — a descrição deixa esses valores explicitamente para experimentação em campo. O índice `(activity_id, is_valid)` mantém a consulta do percurso rápida apesar do volume extra.

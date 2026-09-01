@@ -1,6 +1,6 @@
 # Flux — Project Phases
 
-<!-- inputs: project-description.md@sha256:b1fb623c6dee user-stories.md@sha256:1025d7530e38 database-schema.md@sha256:a1c2b328601e -->
+<!-- inputs: project-description.md@sha256:95865153b13f user-stories.md@sha256:4c853ddaf0ce database-schema.md@sha256:190de328a1c3 -->
 
 ## Overview
 
@@ -28,6 +28,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 - [x] **Task:** Instalar as dependências de runtime do Flux via `npx expo install`
   - **Acceptance criteria:**
     - `expo-location`, `expo-task-manager`, `expo-sqlite`, `expo-speech` e `expo-haptics` constam em `apps/mobile/package.json` em versões compatíveis com o SDK 57
+    - `expo-dev-client` também está instalado — é ele que sustenta o fluxo `expo run:android` + `expo start --dev-client` documentado no README; sem ele o `expo start` cai no Expo Go, que este projeto não suporta
     - `pnpm install` completa sem conflito de peer dependencies
     - `npx tsc --noEmit` passa limpo com as novas dependências
     - `expo-maps` **não** é instalado aqui — pertence à fase 14, que é isolável
@@ -125,7 +126,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 2.1: Infraestrutura de banco
 
-- [ ] **Task:** Criar o módulo de acesso ao SQLite
+- [x] **Task:** Criar o módulo de acesso ao SQLite
   - **Acceptance criteria:**
     - Abre o banco com `openDatabaseAsync` e expõe uma instância única para o app
     - `PRAGMA foreign_keys = ON` é aplicado em toda conexão — sem isso as cascatas do schema não valem
@@ -136,7 +137,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `foreign keys estão ativas na conexão` → asserta que uma inserção com FK inválida falha; `journal_mode retorna WAL`
   - **Traces:** Notes & Conventions (database-schema.md), US-6.2
 
-- [ ] **Task:** Implementar o runner de migrações versionado por `PRAGMA user_version`
+- [x] **Task:** Implementar o runner de migrações versionado por `PRAGMA user_version`
   - **Acceptance criteria:**
     - Migrações são uma lista ordenada de funções, cada uma com número de versão
     - Ao abrir o app, todas as migrações com versão maior que `user_version` são aplicadas em ordem, dentro de uma transação por migração
@@ -146,7 +147,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `migração é idempotente` → executa o runner duas vezes e verifica que o schema resultante é idêntico; `migração falha faz rollback` → injeta SQL inválido e asserta que `user_version` não avançou
   - **Traces:** Notes & Conventions (database-schema.md)
 
-- [ ] **Task:** Definir o mapeamento de tipos DBML → SQLite em um único lugar
+- [x] **Task:** Definir o mapeamento de tipos DBML → SQLite em um único lugar
   - **Acceptance criteria:**
     - `bigint` → `INTEGER`, `boolean` → `INTEGER` (0/1), `decimal` → `REAL`, `timestamp` → `TEXT` ISO-8601 UTC
     - Helpers de leitura e escrita convertem `boolean` e `timestamp` nas duas direções
@@ -156,7 +157,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 2.2: Migração inicial — tabelas lookup
 
-- [ ] **Task:** Criar as cinco tabelas lookup
+- [x] **Task:** Criar as cinco tabelas lookup
   - **Acceptance criteria:**
     - `step_types`, `activity_types`, `activity_statuses`, `step_execution_statuses` e `gps_rejection_reasons` são criadas com as colunas do schema: `id`, `name`, `slug` (único), `description`, `is_active` (default 1), `created_at`, `updated_at`
     - `slug` tem índice único em todas as cinco
@@ -164,7 +165,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `slug duplicado é rejeitado` → asserta violação de unicidade em cada lookup
   - **Traces:** database-schema.md (Lookup tables)
 
-- [ ] **Task:** Semear as cinco tabelas lookup com os valores exatos do schema
+- [x] **Task:** Semear as cinco tabelas lookup com os valores exatos do schema
   - **Acceptance criteria:**
     - `step_types`: `warmup`/Aquecimento, `run`/Corrida, `walk`/Caminhada, `recovery`/Recuperação, `cooldown`/Desaquecimento
     - `activity_types`: `free_run`/Corrida livre, `structured`/Treino estruturado
@@ -177,7 +178,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 2.3: Migração inicial — tabelas de domínio
 
-- [ ] **Task:** Criar a tabela `users` e o bootstrap do usuário local
+- [x] **Task:** Criar a tabela `users` e o bootstrap do usuário local
   - **Acceptance criteria:**
     - `users` criada com `id`, `name` (nullable), `created_at`, `updated_at`
     - Na primeira execução uma única linha é criada e seu `id` fica disponível para o app
@@ -186,7 +187,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `usuário local é criado uma vez só` → abre o app duas vezes e asserta que `users` tem exatamente 1 linha
   - **Traces:** database-schema.md (Domain — usuário local)
 
-- [ ] **Task:** Criar as tabelas de planejamento `training_sessions`, `training_blocks` e `training_steps`
+- [x] **Task:** Criar as tabelas de planejamento `training_sessions`, `training_blocks` e `training_steps`
   - **Acceptance criteria:**
     - `training_sessions` com `user_id` (FK not null), `name`, `estimated_duration_seconds` (default 0), `created_at`, `updated_at`, `deleted_at` nullable
     - `training_blocks` com `training_session_id` (FK not null), `position`, `repeat_count` (default 1) e índice único `(training_session_id, position)`
@@ -196,7 +197,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `position duplicada no mesmo bloco é rejeitada`; `position duplicada no mesmo treino é rejeitada`; `apagar bloco apaga suas etapas`
   - **Traces:** US-1.1, US-1.2, database-schema.md (Domain — planejamento)
 
-- [ ] **Task:** Criar a tabela `activities`
+- [x] **Task:** Criar a tabela `activities`
   - **Acceptance criteria:**
     - Colunas conforme o schema: `user_id`, `activity_type_id`, `activity_status_id` (FKs not null), `training_session_id` e `training_session_name` nullable, `started_at` not null, `finished_at` nullable
     - Métricas `elapsed_duration_seconds`, `moving_duration_seconds`, `distance_meters` com default 0; `average_pace_seconds_per_km` e `best_pace_seconds_per_km` nullable
@@ -206,17 +207,18 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `atividade sem treino é válida` → insere corrida livre com `training_session_id` nulo; `atividade sobrevive à exclusão do treino` → soft delete do treino e asserta que a atividade permanece legível
   - **Traces:** US-2.1, US-2.2, US-7.1, database-schema.md (Domain — execução)
 
-- [ ] **Task:** Criar as tabelas filhas `activity_points`, `activity_splits` e `activity_steps` com exclusão em cascata
+- [x] **Task:** Criar as tabelas filhas `activity_points`, `activity_splits` e `activity_steps` com exclusão em cascata
   - **Acceptance criteria:**
     - `activity_points` com `latitude`/`longitude` (not null), `altitude`, `accuracy`, `speed` nullable, `recorded_at` not null, `is_valid` default 1, `rejection_reason_id` FK nullable, e índices `(activity_id, recorded_at)` e `(activity_id, is_valid)`
     - `activity_splits` com `kilometer`, `duration_seconds`, `pace_seconds_per_km` not null e índice único `(activity_id, kilometer)`
     - `activity_steps` com `training_step_id` nullable, `step_type_id` e `step_execution_status_id` not null, `position`, `repetition_index` default 1, `planned_duration_seconds`, `instructions`, `actual_duration_seconds` default 0, `distance_meters` default 0, `started_at`/`finished_at` nullable e índice único `(activity_id, position)`
-    - As três tabelas declaram `ON DELETE CASCADE` sobre `activities`
-    - Apagar uma `activity` remove todos os seus pontos, splits e etapas
-  - **Feature tests:** `cascata apaga pontos, splits e etapas` → cria uma atividade completa, apaga e asserta zero linhas nas três tabelas; `split duplicado no mesmo km é rejeitado`; `posição duplicada de etapa na mesma atividade é rejeitada`
+    - `activity_pause_intervals` com `activity_id` (FK not null), `started_at` not null, `finished_at` nullable e índice `(activity_id, started_at)` — é a fonte da verdade das pausas manuais, sem a qual `elapsed_duration_seconds` não é recalculável na recuperação
+    - As quatro tabelas declaram `ON DELETE CASCADE` sobre `activities`
+    - Apagar uma `activity` remove todos os seus pontos, splits, etapas e intervalos de pausa
+  - **Feature tests:** `cascata apaga pontos, splits, etapas e pausas` → cria uma atividade completa, apaga e asserta zero linhas nas quatro tabelas; `split duplicado no mesmo km é rejeitado`; `posição duplicada de etapa na mesma atividade é rejeitada`
   - **Traces:** US-2.5, US-7.4, US-8.4, database-schema.md (Exclusão em cascata)
 
-- [ ] **Task:** Criar e semear a tabela `app_preferences`
+- [x] **Task:** Criar e semear a tabela `app_preferences`
   - **Acceptance criteria:**
     - `app_preferences` criada com `id`, `key` (único, not null), `value` (text, not null), `created_at` e `updated_at`
     - A tabela não tem `user_id` nem nenhuma chave estrangeira — é configuração do aparelho, conforme o schema
@@ -228,14 +230,14 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 2.4: Tipos e utilitários de data
 
-- [ ] **Task:** Declarar os tipos TypeScript espelhando cada tabela
+- [x] **Task:** Declarar os tipos TypeScript espelhando cada tabela
   - **Acceptance criteria:**
     - Um tipo por tabela, com nullability idêntica à do schema
     - Slugs das lookups tipados como união literal (`'warmup' | 'run' | ...`) para dar erro de compilação em valor inválido
     - Nenhuma consulta do app retorna `any`
   - **Traces:** database-schema.md (Schema DBML)
 
-- [ ] **Task:** Criar os helpers de data ISO-8601 UTC
+- [x] **Task:** Criar os helpers de data ISO-8601 UTC
   - **Acceptance criteria:**
     - Toda escrita de `timestamp` usa o helper e grava em UTC no formato ISO-8601
     - Toda leitura converte para o objeto de data da aplicação
@@ -251,7 +253,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 3.1: Infraestrutura de repositório
 
-- [ ] **Task:** Criar o helper de transação
+- [x] **Task:** Criar o helper de transação
   - **Acceptance criteria:**
     - Executa um bloco de operações em transação única, com commit ao fim e rollback em qualquer exceção
     - Transações aninhadas usam savepoint em vez de falhar
@@ -259,7 +261,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `exceção no meio da transação não deixa escrita parcial` → insere duas linhas com falha na segunda e asserta zero linhas gravadas
   - **Traces:** US-1.1, US-7.4, US-8.4
 
-- [ ] **Task:** Criar o repositório de lookups com cache em memória
+- [x] **Task:** Criar o repositório de lookups com cache em memória
   - **Acceptance criteria:**
     - Resolve `slug → id` e `id → registro` para `step_types`, `activity_types`, `activity_statuses`, `step_execution_statuses` e `gps_rejection_reasons`
     - As cinco lookups são carregadas uma vez na abertura e servidas de memória — nenhuma consulta por slug durante a corrida
@@ -267,7 +269,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `slug desconhecido lança erro`; `resolução de slug não consulta o banco após o carregamento inicial`
   - **Traces:** database-schema.md (Lookup tables)
 
-- [ ] **Task:** Criar o repositório de `app_preferences`
+- [x] **Task:** Criar o repositório de `app_preferences`
   - **Acceptance criteria:**
     - `ler(chave)` e `gravar(chave, valor)` operam por `key`, codificando e decodificando o `value` em JSON
     - Booleanos fazem roundtrip com o tipo preservado — `false` lido de volta é o booleano `false`, nunca a string `"false"`
@@ -279,7 +281,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 3.2: Repositórios de planejamento
 
-- [ ] **Task:** Criar o repositório de `training_sessions` com leitura da árvore completa
+- [x] **Task:** Criar o repositório de `training_sessions` com leitura da árvore completa
   - **Acceptance criteria:**
     - `listar()` retorna apenas treinos com `deleted_at IS NULL`, ordenados por atualização mais recente
     - `buscarPorId()` retorna o treino com `training_blocks` ordenados por `position`, cada um com seus `training_steps` ordenados por `position` e o `step_type` resolvido
@@ -289,7 +291,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `listagem oculta treinos com deleted_at`; `árvore volta na ordem de position`; `soft delete preserva as atividades originadas do treino`
   - **Traces:** US-1.1, US-1.3, US-1.4, US-8.1
 
-- [ ] **Task:** Criar as operações de `training_blocks`
+- [x] **Task:** Criar as operações de `training_blocks`
   - **Acceptance criteria:**
     - Criar, atualizar `repeat_count`, reordenar e remover blocos de um treino
     - Reordenar reescreve `position` de forma contígua a partir de 0, sem violar o índice único
@@ -298,7 +300,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `reordenação mantém positions contíguas e únicas`; `remover bloco remove suas etapas`
   - **Traces:** US-1.2, US-1.3
 
-- [ ] **Task:** Criar as operações de `training_steps`
+- [x] **Task:** Criar as operações de `training_steps`
   - **Acceptance criteria:**
     - Criar, atualizar (tipo, `duration_seconds`, `instructions`), reordenar dentro do bloco e remover etapas
     - Nenhuma operação permite gravar uma etapa sem `training_block_id`
@@ -309,7 +311,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 3.3: Repositórios de execução
 
-- [ ] **Task:** Criar o repositório de `activities`
+- [x] **Task:** Criar o repositório de `activities`
   - **Acceptance criteria:**
     - `criar()` grava `started_at`, `user_id`, `activity_type_id` e `activity_status_id` (`in_progress`), com `training_session_id` e `training_session_name` quando houver
     - `buscarEmAndamento()` retorna a atividade com `finished_at IS NULL`, se existir
@@ -319,7 +321,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `listagem exclui atividade em andamento`; `ordem é estritamente decrescente por started_at`; `atualização de avaliação não altera métricas objetivas`
   - **Traces:** US-2.1, US-7.3, US-8.1, US-8.3
 
-- [ ] **Task:** Criar o repositório de `activity_points` com inserção em lote
+- [x] **Task:** Criar o repositório de `activity_points` com inserção em lote
   - **Acceptance criteria:**
     - Insere pontos válidos e rejeitados, gravando `is_valid` e `rejection_reason_id` (preenchido só quando `is_valid = false`)
     - Inserção em lote em transação única, para não pagar uma transação por amostra durante a corrida
@@ -328,7 +330,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `ponto rejeitado exige motivo`; `ponto válido não tem motivo`; `listagem de válidos ignora os rejeitados`
   - **Traces:** US-3.1, US-6.2, database-schema.md (activity_points)
 
-- [ ] **Task:** Criar o repositório de `activity_splits`
+- [x] **Task:** Criar o repositório de `activity_splits`
   - **Acceptance criteria:**
     - `registrar()` grava um split imediatamente, com `kilometer`, `duration_seconds` e `pace_seconds_per_km`
     - Tentar gravar o mesmo `kilometer` duas vezes na mesma atividade é rejeitado
@@ -337,7 +339,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `split duplicado é rejeitado`; `melhor pace é o menor valor`; `melhor pace de atividade sem split é nulo`
   - **Traces:** US-2.5, US-7.1
 
-- [ ] **Task:** Criar o repositório de `activity_steps`
+- [x] **Task:** Criar o repositório de `activity_steps`
   - **Acceptance criteria:**
     - `criarSnapshot()` grava a sequência executável completa com `step_type_id`, `instructions`, `planned_duration_seconds`, `position` e `repetition_index` copiados no momento da execução
     - `training_step_id` é gravado como referência opcional e a linha permanece íntegra se o `training_step` de origem for removido
@@ -347,7 +349,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `snapshot sobrevive à edição do treino` → altera a etapa de origem e asserta que a linha executada mantém os valores antigos; `snapshot sobrevive à exclusão do treino`; `contagem por status bate com o total de etapas`
   - **Traces:** US-1.3, US-4.1, US-4.3, US-4.4, US-7.1
 
-- [ ] **Task:** Implementar a exclusão em cascata de atividade em transação única
+- [x] **Task:** Implementar a exclusão em cascata de atividade em transação única
   - **Acceptance criteria:**
     - `excluir(activityId)` remove a `activity` e, em cascata, seus `activity_points`, `activity_splits` e `activity_steps`
     - É hard delete — nenhuma coluna `deleted_at` é usada em atividades
@@ -364,7 +366,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 4.1: Tokens de tema
 
-- [ ] **Task:** Definir os tokens de cor da paleta Solar em tema escuro e claro
+- [x] **Task:** Definir os tokens de cor da paleta Solar em tema escuro e claro
   - **Acceptance criteria:**
     - Tema escuro: fundo `#15100F`, superfícies `#211814` e `#2A2019`, bordas `#382A20`, texto `#FAF3E6`, secundário `#A89684`
     - Semântica: coral `#FF5E3A` exclusivo de ação, ouro `#FFC857` para dado em destaque, sálvia `#9BC7A8` para confirmação passiva, vermelho `#FF4D4D` para destrutivo e sem sinal
@@ -374,7 +376,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/README.md (Convenções visuais)
   - **Traces:** design/README.md, decisão de escopo (escuro + claro desde a fundação)
 
-- [ ] **Task:** Definir os tokens de tipografia
+- [x] **Task:** Definir os tokens de tipografia
   - **Acceptance criteria:**
     - Barlow para números e títulos; JetBrains Mono para rótulos, métricas tabulares e dados
     - Escala cobre os tamanhos dominantes dos design refs, incluindo tempo 208 px @1080, distância 192 px @1080 e tempo restante da etapa 184 px @1080, expressos em dp
@@ -382,7 +384,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/05-activity-free-run.png, .spec/init/design/06-activity-structured.png
   - **Traces:** US-2.3, design/README.md (Tipografia)
 
-- [ ] **Task:** Definir os tokens de espaçamento, raio, sombra e alvo de toque
+- [x] **Task:** Definir os tokens de espaçamento, raio, sombra e alvo de toque
   - **Acceptance criteria:**
     - Alvo de toque nunca abaixo de ~44 dp; na tela de atividade o botão principal tem ~132 dp de altura
     - Botão primário em pílula com gradiente vertical e sombra colorida `0 14px 34px rgba(255,94,58,0.26)`
@@ -391,7 +393,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/README.md (Convenções visuais — Acabamento)
   - **Traces:** design/README.md, US-2.3
 
-- [ ] **Task:** Definir as cores por tipo de etapa
+- [x] **Task:** Definir as cores por tipo de etapa
   - **Acceptance criteria:**
     - Aquecimento `#A89684`, corrida `#FF5E3A`, caminhada `#FFC857`, recuperação `#9BC7A8`, desaquecimento `#C79BB0`
     - As cores são resolvidas a partir do `slug` de `step_types`, não de um índice posicional
@@ -399,7 +401,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/03-training-editor.md (Notas de implementação)
   - **Traces:** US-1.1, US-4.2, design/README.md
 
-- [ ] **Task:** Criar o hook de tema
+- [x] **Task:** Criar o hook de tema
   - **Acceptance criteria:**
     - Expõe os tokens já resolvidos para o esquema de cor corrente
     - Segue o esquema do sistema (`userInterfaceStyle: automatic`)
@@ -408,7 +410,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 4.2: Formatadores de domínio
 
-- [ ] **Task:** Implementar `formatDistance`
+- [x] **Task:** Implementar `formatDistance`
   - **Acceptance criteria:**
     - Recebe metros e devolve quilômetros com vírgula decimal e duas casas (`3180` → `3,18 km`)
     - Zero metros devolve `0,00 km`, nunca vazio ou traço
@@ -416,7 +418,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `3180 m vira 3,18 km`; `0 m vira 0,00 km`; `999 m vira 1,00 km` (arredondamento); `usa vírgula e não ponto decimal`
   - **Traces:** US-7.1, US-8.1
 
-- [ ] **Task:** Implementar `formatDuration`
+- [x] **Task:** Implementar `formatDuration`
   - **Acceptance criteria:**
     - Até 59:59 devolve `mm:ss`; a partir de 1 hora devolve `hh:mm:ss`
     - Segundos e minutos são sempre zero-padded a dois dígitos
@@ -425,7 +427,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `1782 s vira 29:42`; `3600 s vira 01:00:00`; `0 s vira 00:00`; `duração negativa lança erro`
   - **Traces:** US-7.1, US-2.3
 
-- [ ] **Task:** Implementar `formatPace` e o cálculo de pace
+- [x] **Task:** Implementar `formatPace` e o cálculo de pace
   - **Acceptance criteria:**
     - Converte segundos por quilômetro em `mm:ss/km` (`560` → `9:20/km`)
     - Pace é calculado a partir de duração e distância em metros; distância zero devolve nulo, exibido como `—`
@@ -433,7 +435,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `560 s/km vira 9:20/km`; `distância zero devolve nulo`; `pace é derivado de moving_duration e não de elapsed_duration para o pace médio`
   - **Traces:** US-2.3, US-7.1
 
-- [ ] **Task:** Implementar `formatDateTime` em pt-BR
+- [x] **Task:** Implementar `formatDateTime` em pt-BR
   - **Acceptance criteria:**
     - Formato curto `30 ago · 07:42` para a lista do histórico e `30 ago, 07:42` para os cabeçalhos de detalhe
     - O ano só aparece quando diferente do ano corrente
@@ -441,7 +443,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `data do ano corrente omite o ano`; `data de outro ano inclui o ano`; `mês sai abreviado em pt-BR`
   - **Traces:** US-8.1, US-8.2
 
-- [ ] **Task:** Implementar a âncora textual do RPE
+- [x] **Task:** Implementar a âncora textual do RPE
   - **Acceptance criteria:**
     - 1 a 3 devolve `Fácil`, 4 a 6 devolve `Controlado`, 7 a 10 devolve `Difícil`
     - Valor nulo devolve nulo, exibido como `—/10`
@@ -457,7 +459,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 5.1: Componentes compartilhados
 
-- [ ] **Task:** Componente `Screen`
+- [x] **Task:** Componente `Screen`
   - **Acceptance criteria:**
     - Aplica fundo do tema, safe area e a lavagem quente no topo
     - Aceita cabeçalho opcional com título e ação de voltar
@@ -465,14 +467,14 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/01-home.png
   - **Traces:** design/README.md (Acabamento)
 
-- [ ] **Task:** Componente `Surface` / `Card`
+- [x] **Task:** Componente `Surface` / `Card`
   - **Acceptance criteria:**
     - Superfície com raio, borda e hairline interna clara conforme os tokens
     - Variante tocável com feedback de toque e alvo mínimo respeitado
   - **Design ref:** .spec/init/design/02-training-library.png
   - **Traces:** design/README.md
 
-- [ ] **Task:** Componentes de botão — primário, secundário e destrutivo
+- [x] **Task:** Componentes de botão — primário, secundário e destrutivo
   - **Acceptance criteria:**
     - Primário em pílula com gradiente vertical e sombra coral; secundário em contorno; destrutivo em vermelho
     - Estado desabilitado visualmente distinto e não tocável
@@ -480,7 +482,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/01-home.png, .spec/init/design/05-activity-free-run.png
   - **Traces:** US-2.1, US-2.4, design/README.md
 
-- [ ] **Task:** Componente `Chip`
+- [x] **Task:** Componente `Chip`
   - **Acceptance criteria:**
     - Renderiza rótulos curtos como `5 min caminhada` e `6× 2 min corrida + 2 min caminhada`
     - Quebra em múltiplas linhas sem cortar texto
@@ -488,7 +490,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/02-training-library.png
   - **Traces:** US-1.2, US-8.1
 
-- [ ] **Task:** Componentes `MetricTile` e `MetricGrid`
+- [x] **Task:** Componentes `MetricTile` e `MetricGrid`
   - **Acceptance criteria:**
     - Rótulo em JetBrains Mono maiúsculo e valor em Barlow, alinhados conforme os design refs
     - Valor ausente renderiza `—` sem quebrar o alinhamento da grade
@@ -496,13 +498,13 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/08-activity-result.png
   - **Traces:** US-7.1, US-8.2
 
-- [ ] **Task:** Componente `SectionHeader`
+- [x] **Task:** Componente `SectionHeader`
   - **Acceptance criteria:**
     - Título em maiúsculas com contagem opcional (`ETAPAS EXECUTADAS · 14`) e ação opcional à direita (`Ver todas`)
   - **Design ref:** .spec/init/design/12-history-detail.png
   - **Traces:** US-7.1, US-8.2
 
-- [ ] **Task:** Componente `BottomSheet`
+- [x] **Task:** Componente `BottomSheet`
   - **Acceptance criteria:**
     - Sheet sobre a tela corrente com véu `rgba(0,0,0,0.4)` e dispensa por toque fora, configurável
     - Suporta conteúdo rolável e ações fixas ao pé
@@ -510,7 +512,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/03-training-editor.png, .spec/init/design/14-audio-cues.png
   - **Traces:** US-1.1, US-5.1
 
-- [ ] **Task:** Componente `ConfirmDialog`
+- [x] **Task:** Componente `ConfirmDialog`
   - **Acceptance criteria:**
     - Modal com título, texto, resumo opcional e duas ações, uma delas podendo ser destrutiva
     - Variante não dispensável (sem toque fora, sem voltar do sistema) para a recuperação de atividade
@@ -518,21 +520,21 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/10-activity-discard.png, .spec/init/design/13-activity-recovery.png
   - **Traces:** US-1.4, US-6.3, US-7.4, US-8.4
 
-- [ ] **Task:** Componente `EmptyState`
+- [x] **Task:** Componente `EmptyState`
   - **Acceptance criteria:**
     - Título, texto explicativo e ação opcional
     - Usado pela biblioteca vazia, pelo histórico vazio e pela lista de etapas vazia do editor
   - **Design ref:** .spec/init/design/11-history-list.png
   - **Traces:** US-1.1, US-8.1
 
-- [ ] **Task:** Componente `SwitchRow`
+- [x] **Task:** Componente `SwitchRow`
   - **Acceptance criteria:**
     - Linha com rótulo, legenda secundária e interruptor
     - Interruptor ativo usa coral de ação; alvo de toque cobre a linha inteira
   - **Design ref:** .spec/init/design/14-audio-cues.png
   - **Traces:** US-5.1
 
-- [ ] **Task:** Componente `GpsStatusPill`
+- [x] **Task:** Componente `GpsStatusPill`
   - **Acceptance criteria:**
     - Três estados visuais: `GPS: boa precisão` (sálvia), `GPS: precisão degradada` (ouro, em faixa própria), `GPS: sem sinal` (vermelho, com texto explicativo)
     - Aceita também o estado `GPS: sem precisão aceitável` usado antes de iniciar
@@ -542,7 +544,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 5.2: Navegação e tela de Início
 
-- [ ] **Task:** Montar o shell de navegação com `expo-router`
+- [x] **Task:** Montar o shell de navegação com `expo-router`
   - **Acceptance criteria:**
     - Stack com as rotas do MVP: início, biblioteca, editor de treino, pré-início, atividade, resultado, RPE, histórico, detalhe da atividade
     - Sem abas — a navegação parte da tela de Início, conforme o design ref 01
@@ -551,7 +553,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/01-home.png
   - **Traces:** US-2.1, US-8.1
 
-- [ ] **Task:** Implementar a tela de Início (tela 01)
+- [x] **Task:** Implementar a tela de Início (tela 01)
   - **Acceptance criteria:**
     - Título `Flux`, cartão `CORRIDA LIVRE` com a descrição exata do design ref e botão `Iniciar corrida livre` com altura mínima ~48 dp
     - Linha `Biblioteca de treinos` com contagem real (`Nenhum treino` / `1 treino` / `N treinos`), lida dos treinos não excluídos
@@ -570,7 +572,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 6.1: Configuração de limiares
 
-- [ ] **Task:** Criar o módulo único de limiares do filtro de GPS com defaults provisórios
+- [x] **Task:** Criar o módulo único de limiares do filtro de GPS com defaults provisórios
   - **Acceptance criteria:**
     - Um único módulo exporta `maxAccuracyMeters`, `maxPlausibleSpeedMetersPerSecond`, `maxPositionJumpMeters`, `maxSampleIntervalSeconds` e `minSampleIntervalSeconds`
     - Cada valor traz comentário com a justificativa e a marca explícita de **provisório, a calibrar em campo (fase 20)**
@@ -582,7 +584,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 6.2: Regras de validação e distância
 
-- [ ] **Task:** Implementar o cálculo de distância entre coordenadas
+- [x] **Task:** Implementar o cálculo de distância entre coordenadas
   - **Acceptance criteria:**
     - Distância haversine entre dois pares de latitude/longitude, em metros
     - Precisão suficiente para distâncias curtas (dezenas de metros) sem erro de arredondamento acumulado
@@ -590,7 +592,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `distância conhecida entre dois pontos bate com a referência dentro de 0,5 %`; `ponto contra si mesmo devolve zero`; `soma de segmentos curtos não acumula erro perceptível em 1000 pontos`
   - **Traces:** US-2.3, US-3.1
 
-- [ ] **Task:** Implementar a regra de precisão máxima (`low_accuracy`)
+- [x] **Task:** Implementar a regra de precisão máxima (`low_accuracy`)
   - **Acceptance criteria:**
     - Amostra com `accuracy` acima de `maxAccuracyMeters` é rejeitada com motivo `low_accuracy`
     - Amostra sem `accuracy` informada é tratada como suspeita e rejeitada com o mesmo motivo
@@ -598,7 +600,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `accuracy acima do limiar é rejeitada com low_accuracy`; `accuracy ausente é rejeitada`; `accuracy no limiar exato é aceita`
   - **Traces:** US-3.1
 
-- [ ] **Task:** Implementar a regra de velocidade implausível (`implausible_speed`)
+- [x] **Task:** Implementar a regra de velocidade implausível (`implausible_speed`)
   - **Acceptance criteria:**
     - Velocidade derivada da distância e do intervalo desde o último ponto **aceito** é comparada a `maxPlausibleSpeedMetersPerSecond`
     - Acima do limiar, a amostra é rejeitada com motivo `implausible_speed`
@@ -606,14 +608,14 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `deslocamento de 500 m em 2 s é rejeitado`; `velocidade de corrida normal é aceita`; `após uma rejeição, a próxima amostra é comparada contra o último ponto aceito`
   - **Traces:** US-3.1
 
-- [ ] **Task:** Implementar a regra de salto abrupto de posição (`position_jump`)
+- [x] **Task:** Implementar a regra de salto abrupto de posição (`position_jump`)
   - **Acceptance criteria:**
     - Deslocamento acima de `maxPositionJumpMeters` em relação ao último ponto aceito é rejeitado com motivo `position_jump`
     - A regra é avaliada independentemente da velocidade, para pegar saltos com intervalo longo que passariam no teste de velocidade
   - **Feature tests:** `salto de 300 m é rejeitado mesmo com intervalo longo`; `deslocamento normal entre amostras consecutivas é aceito`
   - **Traces:** US-3.1
 
-- [ ] **Task:** Implementar a regra de intervalo entre medições (`stale_sample`)
+- [x] **Task:** Implementar a regra de intervalo entre medições (`stale_sample`)
   - **Acceptance criteria:**
     - Amostra com `recorded_at` fora da janela `[minSampleIntervalSeconds, maxSampleIntervalSeconds]` em relação ao último ponto aceito é rejeitada com motivo `stale_sample`
     - Amostra com `recorded_at` anterior ao último ponto aceito é rejeitada (chegada fora de ordem)
@@ -621,7 +623,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `amostra fora de ordem é rejeitada`; `amostra duplicada é rejeitada`; `intervalo muito longo é rejeitado como stale_sample`
   - **Traces:** US-3.1
 
-- [ ] **Task:** Implementar o orquestrador do filtro
+- [x] **Task:** Implementar o orquestrador do filtro
   - **Acceptance criteria:**
     - Recebe uma amostra e o estado do filtro e devolve `{ aceito: true, distanciaIncremental }` ou `{ aceito: false, motivo }`
     - As regras são avaliadas em ordem determinística e o motivo devolvido é o da primeira regra violada
@@ -631,7 +633,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `série sintética com pontos de accuracy 60 m produz a mesma distância que a série sem eles` (resultado esperado da US-3.1); `primeira amostra não soma distância`; `motivo devolvido é o da primeira regra violada`; `estado serializado e restaurado produz a mesma decisão`
   - **Traces:** US-3.1
 
-- [ ] **Task:** Implementar o tratamento de lacuna de sinal
+- [x] **Task:** Implementar o tratamento de lacuna de sinal
   - **Acceptance criteria:**
     - Um intervalo sem amostras válidas acima de `maxSampleIntervalSeconds` é marcado como lacuna
     - A primeira amostra válida após a lacuna **não** soma a distância em linha reta desde antes da lacuna
@@ -642,7 +644,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 6.3: Serviço de localização
 
-- [ ] **Task:** Implementar o wrapper de permissões de localização
+- [x] **Task:** Implementar o wrapper de permissões de localização
   - **Acceptance criteria:**
     - Foreground e background são verificados e solicitados em **chamadas separadas**, nessa ordem
     - O wrapper devolve os dois estados individualmente: concedida, negada, negada permanentemente
@@ -651,7 +653,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `background só é solicitado após foreground concedido`; `negativa permanente é distinguida de negativa simples`
   - **Traces:** US-2.1, US-6.1
 
-- [ ] **Task:** Implementar a aquisição do fix inicial de GPS
+- [x] **Task:** Implementar a aquisição do fix inicial de GPS
   - **Acceptance criteria:**
     - Antes de iniciar, o app tenta obter uma posição com `accuracy` dentro de `maxAccuracyMeters`
     - Expõe o estado da tentativa em tempo real, para a UI da tela 07 atualizar o indicador enquanto aguarda
@@ -660,7 +662,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `fix dentro do limiar libera o estado boa precisão`; `ausência de fix mantém o estado sem precisão aceitável sem bloquear`
   - **Traces:** US-2.1, US-2.2
 
-- [ ] **Task:** Implementar a assinatura de atualizações de localização com `expo-task-manager`
+- [x] **Task:** Implementar a assinatura de atualizações de localização com `expo-task-manager`
   - **Acceptance criteria:**
     - A task é registrada com `TaskManager.defineTask()` **no topo do módulo**, fora de qualquer componente
     - A assinatura usa `startLocationUpdatesAsync` com a frequência de coleta definida em um único ponto de configuração
@@ -669,7 +671,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `task registrada no topo do módulo é encontrada pelo TaskManager`; `parar a atividade encerra a assinatura`
   - **Traces:** US-6.1, US-6.2
 
-- [ ] **Task:** Implementar o avaliador de qualidade do sinal
+- [x] **Task:** Implementar o avaliador de qualidade do sinal
   - **Acceptance criteria:**
     - Deriva o estado da `accuracy` **média das amostras recentes**, nunca de uma leitura isolada
     - Distingue exatamente três estados: boa precisão, precisão degradada e sem sinal
@@ -684,7 +686,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 **Goal:** Construir o motor da atividade: estados, cronômetro por timestamps, distância, paces, persistência incremental e consolidação final. · **Depends on:** Phase 3, Phase 6 · **Covers:** workflows 2, 3, 9, 10
 
-- [ ] **Task:** Implementar a máquina de estados da atividade
+- [x] **Task:** Implementar a máquina de estados da atividade
   - **Acceptance criteria:**
     - Estados `in_progress`, `paused` e `finished`, espelhados em `activity_statuses` a cada transição
     - Transições válidas: início → `in_progress`; `in_progress` ↔ `paused`; ambos → `finished`
@@ -693,25 +695,26 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `retomar sem estar pausada é rejeitado`; `finalizar de qualquer estado é permitido`; `nenhuma transição sai de finished`; `o status persistido acompanha o estado em memória`
   - **Traces:** US-2.1, US-2.4, US-4.4
 
-- [ ] **Task:** Implementar o cronômetro por timestamps
+- [x] **Task:** Implementar o cronômetro por timestamps
   - **Acceptance criteria:**
-    - `elapsed` é sempre derivado de `started_at` e do instante corrente, nunca de contagem de ticks
+    - `elapsed` é sempre derivado de `started_at`, do instante corrente e do total pausado — nunca de contagem de ticks; durante a pausa o instante corrente é congelado no momento em que ela começou
     - O tick de UI só dispara re-render; o valor exibido é recalculado a cada render a partir dos timestamps
     - Ao voltar do background, o tempo exibido está correto sem defasagem acumulada
     - A mudança de relógio do sistema durante a atividade não produz tempo negativo
   - **Feature tests:** `elapsed após simular 30 min em background bate com o tempo de parede`; `elapsed não depende do número de ticks executados`; `relógio recuado não produz elapsed negativo`
   - **Traces:** US-2.3, US-6.1
 
-- [ ] **Task:** Implementar o registro de intervalos de pausa
+- [x] **Task:** Implementar o registro de intervalos de pausa
   - **Acceptance criteria:**
-    - Cada pausa grava o instante de início e, ao retomar, o de fim
-    - `elapsed` inclui o tempo pausado; `moving_duration` não
+    - Cada pausa grava uma linha em `activity_pause_intervals` com o instante de início e, ao retomar, o de fim; finalizar fecha qualquer pausa ainda aberta
+    - O tempo pausado **não** conta para `elapsed` nem para `moving_duration` — o cronômetro exibido congela na pausa e retoma do mesmo número
+    - O tempo de parede puro continua derivável de `finished_at - started_at`; a diferença `elapsed - moving` passa a ser o tempo parado **sem** pausa manual
     - O estado de pausa é persistido, sobrevivendo ao app ir para background e a um encerramento
     - Durante a pausa nenhuma amostra de GPS é incorporada ao percurso
-  - **Feature tests:** `tempo pausado conta para elapsed e não para moving`; `pontos recebidos durante a pausa não entram no percurso`; `estado de pausa sobrevive ao background`
+  - **Feature tests:** `tempo pausado não conta para elapsed nem para moving`; `o número exibido congela na pausa e retoma do mesmo ponto`; `pontos recebidos durante a pausa não entram no percurso`; `estado de pausa sobrevive ao background`; `finalizar durante a pausa fecha o intervalo aberto`
   - **Traces:** US-2.4, US-6.1
 
-- [ ] **Task:** Implementar o critério de movimento e o acúmulo de `moving_duration`
+- [x] **Task:** Implementar o critério de movimento e o acúmulo de `moving_duration`
   - **Acceptance criteria:**
     - Um critério explícito e configurável separa "parado" de "em movimento" — limiar de velocidade e/ou deslocamento mínimo entre amostras aceitas
     - O critério vive no mesmo módulo de configuração dos limiares de GPS, marcado como provisório e a calibrar na fase 20
@@ -720,7 +723,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `parada sem pausa manual não avança moving_duration`; `moving_duration nunca excede elapsed`; `o critério não altera o status da atividade`
   - **Traces:** US-2.4, US-7.1, Open Questions (project-description.md — detecção de movimento)
 
-- [ ] **Task:** Implementar a criação da atividade no início
+- [x] **Task:** Implementar a criação da atividade no início
   - **Acceptance criteria:**
     - A linha em `activities` é criada com `started_at` **antes** de qualquer ponto ser coletado
     - `activity_type_id` recebe `free_run` na corrida livre
@@ -730,7 +733,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `a atividade existe no banco antes do primeiro ponto`; `falha na criação impede o início`
   - **Traces:** US-2.1, US-6.2
 
-- [ ] **Task:** Implementar a ingestão de amostras e a persistência dos pontos
+- [x] **Task:** Implementar a ingestão de amostras e a persistência dos pontos
   - **Acceptance criteria:**
     - Cada amostra passa pelo orquestrador do filtro antes de qualquer efeito
     - Amostras aceitas são gravadas em `activity_points` com `is_valid = 1`; rejeitadas com `is_valid = 0` e o `rejection_reason_id` correspondente
@@ -739,7 +742,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `amostra rejeitada é persistida com motivo e não soma distância`; `lote pendente é descarregado ao pausar`; `nenhuma amostra é perdida entre lotes`
   - **Traces:** US-3.1, US-6.2
 
-- [ ] **Task:** Implementar o acúmulo de distância
+- [x] **Task:** Implementar o acúmulo de distância
   - **Acceptance criteria:**
     - `distance_meters` só avança com pontos aceitos pelo filtro
     - Lacunas de sinal não somam distância
@@ -747,7 +750,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `distância acumulada bate com a soma dos segmentos entre pontos válidos`; `pontos rejeitados não alteram a distância`
   - **Traces:** US-2.3, US-3.1, US-3.3
 
-- [ ] **Task:** Implementar o cálculo de pace atual e pace médio
+- [x] **Task:** Implementar o cálculo de pace atual e pace médio
   - **Acceptance criteria:**
     - Pace atual usa uma janela recente de amostras válidas, com tamanho de janela configurável
     - Pace médio usa `distance_meters` e `moving_duration_seconds` acumulados
@@ -756,7 +759,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `pace atual é nulo nos primeiros segundos`; `pace atual é nulo em pausa e sem sinal`; `pace médio usa moving e não elapsed`
   - **Traces:** US-2.3, US-3.2
 
-- [ ] **Task:** Implementar a gravação periódica do estado da atividade
+- [x] **Task:** Implementar a gravação periódica do estado da atividade
   - **Acceptance criteria:**
     - As métricas correntes (`elapsed`, `moving`, `distance`) são gravadas em `activities` em cadência configurável durante a execução, não só ao finalizar
     - A cadência é definida em um único ponto e documentada como decisão provisória
@@ -765,9 +768,10 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `estado é gravado sem finalizar a atividade`; `encerramento forçado preserva as métricas da última gravação`
   - **Traces:** US-6.2, Open Questions (database-schema.md — cadência de gravação)
 
-- [ ] **Task:** Implementar a consolidação de métricas na finalização
+- [x] **Task:** Implementar a consolidação de métricas na finalização
   - **Acceptance criteria:**
     - `finished_at`, `elapsed_duration_seconds`, `moving_duration_seconds`, `distance_meters`, `average_pace_seconds_per_km` e `best_pace_seconds_per_km` são gravados em uma transação
+    - `elapsed_duration_seconds` grava o **tempo de atividade** — sem as pausas manuais —, o mesmo número que o corredor viu na tela ao finalizar
     - `activity_status_id` passa a `finished`
     - `best_pace_seconds_per_km` é o menor pace entre os `activity_splits`; nulo quando não há split
     - `average_pace_seconds_per_km` é nulo quando a distância é zero
@@ -775,7 +779,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `atividade sem split tem best_pace nulo`; `atividade sem distância tem average_pace nulo`; `consolidação é atômica`; `métricas objetivas não mudam após finished_at`
   - **Traces:** US-7.1, US-8.3
 
-- [ ] **Task:** Expor o estado da atividade à camada de UI
+- [x] **Task:** Expor o estado da atividade à camada de UI
   - **Acceptance criteria:**
     - Um contexto/hook único expõe estado, métricas, qualidade do sinal e ações (pausar, retomar, finalizar)
     - A UI não acessa repositórios nem o serviço de localização diretamente
@@ -790,7 +794,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 8.1: Fluxo de início e bloqueios
 
-- [ ] **Task:** Ligar o botão `Iniciar corrida livre` ao fluxo de início
+- [x] **Task:** Ligar o botão `Iniciar corrida livre` ao fluxo de início
   - **Acceptance criteria:**
     - O toque verifica permissão de foreground e de background e, se ausentes, as solicita
     - Com permissão concedida e fix aceitável, cria a atividade e navega para a tela 05
@@ -800,7 +804,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/01-home.md (Interações)
   - **Traces:** US-2.1, US-6.3
 
-- [ ] **Task:** Implementar a tela 07 na variante permissão negada
+- [x] **Task:** Implementar a tela 07 na variante permissão negada
   - **Acceptance criteria:**
     - Marca de alerta `!` em vermelho, título e texto exatos do design ref
     - Quadro de status com duas linhas — `Localização em uso` e `Localização em segundo plano` — refletindo o estado real de cada permissão
@@ -810,7 +814,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/07-activity-blocked.png
   - **Traces:** US-2.1, US-6.1
 
-- [ ] **Task:** Implementar a tela 07 na variante GPS sem fix
+- [x] **Task:** Implementar a tela 07 na variante GPS sem fix
   - **Acceptance criteria:**
     - Sheet sobre a tela de origem, com indicador ouro `GPS: sem precisão aceitável`, título e texto exatos do design ref
     - Ações `Iniciar assim mesmo` e `Aguardar sinal` (primária)
@@ -822,7 +826,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 8.2: Tela de atividade — corrida livre
 
-- [ ] **Task:** Implementar o layout base da tela 05
+- [x] **Task:** Implementar o layout base da tela 05
   - **Acceptance criteria:**
     - Rótulo de contexto `CORRIDA LIVRE`, tempo decorrido dominante com rótulo `TEMPO`, distância com rótulo `DISTÂNCIA`
     - `Pace atual` e `Pace médio` como informação secundária, no formato `mm:ss /km`
@@ -832,7 +836,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/05-activity-free-run.png
   - **Traces:** US-2.3
 
-- [ ] **Task:** Implementar o estado rodando com boa precisão
+- [x] **Task:** Implementar o estado rodando com boa precisão
   - **Acceptance criteria:**
     - Indicador sálvia `GPS: boa precisão`
     - Tempo, distância e paces atualizam continuamente a partir do hook de atividade
@@ -840,14 +844,14 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Estados)
   - **Traces:** US-2.3, US-3.2
 
-- [ ] **Task:** Implementar o estado de precisão degradada
+- [x] **Task:** Implementar o estado de precisão degradada
   - **Acceptance criteria:**
     - Indicador ouro `GPS: precisão degradada` dentro de faixa `#2A1F0C` (equivalente claro nos tokens)
     - As métricas continuam sendo atualizadas normalmente
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Estados)
   - **Traces:** US-3.2
 
-- [ ] **Task:** Implementar o estado sem sinal
+- [x] **Task:** Implementar o estado sem sinal
   - **Acceptance criteria:**
     - Indicador vermelho `GPS: sem sinal` com o texto `O tempo continua contando. A distância volta a avançar quando o sinal retornar.`
     - A distância fica cinza e o rótulo passa a `DISTÂNCIA · SEM AVANÇAR`
@@ -856,16 +860,17 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Estados)
   - **Traces:** US-3.2, US-3.3
 
-- [ ] **Task:** Implementar o estado pausada
+- [x] **Task:** Implementar o estado pausada
   - **Acceptance criteria:**
     - Selo `PAUSADA` ao lado do rótulo de contexto; tempo em ouro com rótulo `TEMPO · PARADO`
+    - O número do tempo **congela** enquanto pausado e retoma do mesmo ponto — não volta a contar o intervalo pausado
     - `Pace atual` exibe `—`
     - `PAUSAR` é substituído por `RETOMAR` (primário) e `FINALIZAR` (contorno, vermelho)
     - A tela reflete o estado real da máquina de estados, inclusive ao voltar do background já pausada
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Estados)
   - **Traces:** US-2.4
 
-- [ ] **Task:** Ligar as ações pausar, retomar e finalizar
+- [x] **Task:** Ligar as ações pausar, retomar e finalizar
   - **Acceptance criteria:**
     - `PAUSAR` para o cronômetro e interrompe a incorporação de pontos ao percurso
     - `RETOMAR` continua de onde parou, com distância, tempo e splits consistentes
@@ -874,7 +879,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Interações)
   - **Traces:** US-2.4, US-7.1
 
-- [ ] **Task:** Ligar o indicador de GPS ao avaliador de qualidade do sinal
+- [x] **Task:** Ligar o indicador de GPS ao avaliador de qualidade do sinal
   - **Acceptance criteria:**
     - O componente consome exclusivamente o estado calculado na fase 6, sem recalcular nada
     - A mudança de estado é visivelmente perceptível sem o usuário interpretar números
@@ -882,7 +887,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Estados)
   - **Traces:** US-3.2
 
-- [ ] **Task:** Impedir a saída acidental da tela de atividade
+- [x] **Task:** Impedir a saída acidental da tela de atividade
   - **Acceptance criteria:**
     - O gesto e o botão de voltar do sistema não descartam a atividade em andamento
     - Sair para a tela de Início mantém a atividade rodando e oferece caminho de volta
@@ -1090,7 +1095,8 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Acceptance criteria:**
     - `PACE MÉDIO`, `MELHOR KM`, `TEMPO CORRENDO` e `TEMPO CAMINHANDO` exibidos com os formatadores da fase 4
     - `MELHOR KM` vem de `best_pace_seconds_per_km`
-    - `TEMPO CORRENDO` corresponde a `moving_duration_seconds` e `TEMPO CAMINHANDO` ao complemento em relação a `elapsed_duration_seconds`
+    - `TEMPO CORRENDO` corresponde a `moving_duration_seconds` e `TEMPO CAMINHANDO` ao complemento em relação a `elapsed_duration_seconds` — que, por `elapsed` já excluir as pausas manuais, é o tempo parado involuntário (semáforo, água), e a soma dos dois fecha exatamente o `TEMPO TOTAL`
+    - O `TEMPO TOTAL` exibido é o mesmo tempo de atividade que o corredor viu durante a corrida
     - Valores nulos exibem `—` sem quebrar a grade
   - **Design ref:** .spec/init/design/08-activity-result.png
   - **Traces:** US-7.1

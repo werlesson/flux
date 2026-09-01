@@ -18,7 +18,7 @@ O público é o **corredor iniciante ou em retomada** — alguém que ainda alte
 - **TrainingSession (treino):** um treino planejado e reutilizável, criado pelo usuário, composto por etapas ordenadas. Vive numa **biblioteca** — não é atribuído a uma data.
 - **TrainingStep (etapa):** unidade executável de um treino. Tem tipo, ordem, duração, intensidade esperada e instrução exibida/falada. Tipos iniciais: **aquecimento, corrida, caminhada, recuperação, desaquecimento**.
 - **Bloco de repetição:** agrupamento de etapas repetido N vezes (ex.: `6× [2min corrida + 2min caminhada]`). O modelo deve representar repetições **sem duplicar as etapas** no banco.
-- **elapsed_time vs moving_time:** `elapsed_time` é o tempo de parede entre início e fim; `moving_time` conta só os períodos em que houve deslocamento real. As duas métricas coexistem desde o MVP e alimentam paces diferentes.
+- **elapsed_time vs moving_time:** `elapsed_time` é o **tempo de atividade** — o intervalo entre início e fim **menos os períodos de pausa manual**; `moving_time` conta só os períodos em que houve deslocamento real. O tempo pausado não entra em nenhuma das duas: durante a pausa o cronômetro exibido congela, e é isso que o corredor vê tanto na tela de atividade quanto no resultado. O tempo de parede puro continua derivável de `finished_at - started_at` sempre que for necessário. A diferença `elapsed_time - moving_time` é, portanto, o tempo parado **sem** pausa manual — semáforo, água — que a tela de resultado apresenta como tempo caminhando. As duas métricas coexistem desde o MVP e alimentam paces diferentes.
 - **Pace:** tempo por quilômetro (`mm:ss/km`). Existe em três formas: **pace atual** (janela recente), **pace médio** (da atividade) e **pace do split** (por km).
 - **RPE (Rate of Perceived Exertion):** avaliação subjetiva de esforço numa escala de **1 a 10**, coletada ao finalizar a atividade, acompanhada de um campo de observações opcional. Substitui a frequência cardíaca para o público-alvo.
 - **Motor de treino:** o componente que percorre as etapas do TrainingSession durante a atividade, controla as transições automaticamente e dispara as orientações. Precisa continuar correto com a tela bloqueada.
@@ -106,6 +106,7 @@ Durante o treino estruturado, a tela mostra também **etapa atual** e **próxima
 - O cronômetro é calculado por **timestamps**, nunca por contagem de ticks — ticks divergem após background.
 - O indicador de qualidade do GPS reflete a `accuracy` das amostras recentes.
 - Pausa e retomada são **manuais** no MVP; auto-pause fica para depois.
+- Durante a pausa o cronômetro **congela**: o tempo pausado não entra no `elapsed_time`, e o número exibido ao retomar continua de onde parou.
 
 ### 4. Validar e filtrar os pontos de GPS
 

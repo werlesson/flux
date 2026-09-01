@@ -1,6 +1,6 @@
 # Flux — User Stories
 
-<!-- inputs: project-description.md@sha256:b1fb623c6dee -->
+<!-- inputs: project-description.md@sha256:95865153b13f -->
 
 ## Overview
 
@@ -145,7 +145,8 @@ O MVP é **offline, Android e de usuário único**: não há autenticação, pap
 - [ ] Durante a pausa, o cronômetro para e nenhum ponto de GPS é incorporado ao percurso
 - [ ] Durante a pausa, o motor de treino também para de avançar as etapas
 - [ ] Consigo retomar, e a contagem continua de onde parou
-- [ ] O tempo pausado conta para `elapsed_time` mas não para `moving_time`
+- [ ] O tempo pausado **não** conta para `elapsed_time` nem para `moving_time` — o número exibido congela na pausa e retoma do mesmo ponto
+- [ ] O tempo de parede puro, incluindo as pausas, continua derivável de `finished_at - started_at`
 - [ ] O estado de pausa sobrevive ao app ir para background
 
 **Expected Result:** A atividade retomada mantém distância, tempo e etapa consistentes com o momento da pausa.
@@ -391,6 +392,8 @@ O MVP é **offline, Android e de usuário único**: não há autenticação, pap
 
 **Acceptance Criteria:**
 - [ ] A tela exibe distância total, tempo total (`elapsed`), tempo em movimento (`moving`), pace médio e melhor quilômetro
+- [ ] O tempo total exibido é o mesmo tempo de atividade que vi durante a corrida — pausas manuais não aparecem nele
+- [ ] A decomposição fecha: tempo em movimento + tempo parado sem pausa = tempo total
 - [ ] A tela exibe a lista de splits com quilômetro, duração e pace
 - [ ] Em atividade com treino estruturado, a tela exibe as etapas executadas, indicando as concluídas, puladas e não realizadas
 - [ ] Distâncias são exibidas em quilômetros com duas casas decimais
