@@ -10,6 +10,7 @@ export interface TrainingSessionInput { id?: number; user_id: number; name: stri
 export interface TrainingStepTree extends TrainingStep { step_type: StepType }
 export interface TrainingBlockTree extends TrainingBlock { steps: TrainingStepTree[] }
 export interface TrainingSessionTree extends TrainingSession { blocks: TrainingBlockTree[] }
+export interface TrainingLibraryItem extends TrainingSessionTree { is_in_progress: boolean }
 
 export class TrainingSessionsRepository {
   constructor(private readonly database: DatabaseAdapter, private readonly lookups = new LookupRepository(database)) {}
@@ -17,6 +18,18 @@ export class TrainingSessionsRepository {
   async listar(): Promise<TrainingSession[]> {
     const rows = await this.database.all<Record<string, unknown>>('SELECT * FROM training_sessions WHERE deleted_at IS NULL ORDER BY updated_at DESC');
     return rows.map(row => dates(row) as unknown as TrainingSession);
+  }
+
+  async listarBiblioteca(): Promise<TrainingLibraryItem[]> {
+    const sessions = await this.listar();
+    const activeRows = await this.database.all<{ training_session_id: number }>('SELECT DISTINCT training_session_id FROM activities WHERE finished_at IS NULL AND training_session_id IS NOT NULL');
+    const activeIds = new Set(activeRows.map(row => row.training_session_id));
+    return Promise.all(sessions.map(async session => ({ ...(await this.buscarPorId(session.id))!, is_in_progress: activeIds.has(session.id) })));
+  }
+
+  async estaEmExecucao(id: number): Promise<boolean> {
+    const [row] = await this.database.all<{ count: number }>('SELECT COUNT(*) count FROM activities WHERE training_session_id=? AND finished_at IS NULL', [id]);
+    return (row?.count ?? 0) > 0;
   }
 
   async buscarPorId(id: number): Promise<TrainingSessionTree | null> {
@@ -70,7 +83,7 @@ export class TrainingSessionsRepository {
   }
 
   async excluir(id: number, at = new Date()): Promise<void> {
-    await this.database.run('UPDATE training_sessions SET deleted_at=?,updated_at=? WHERE id=?', [now(at), now(at), id]);
+    await this.database.run('UPDATE training_sessions SET deleted_at=?,updated_at=? WHERE id=? AND deleted_at IS NULL', [now(at), now(at), id]);
   }
 }
 
