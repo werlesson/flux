@@ -1,5 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useActivity } from '@/activity/activity-context';
@@ -15,13 +15,26 @@ const ANCHORS = [{ label: '1–3 Fácil', min: 1, max: 3 }, { label: '4–6 Cont
 
 export default function RpeScreen() {
   const { activityId } = useActivity();
+  const params = useLocalSearchParams<{ activityId?: string; mode?: string }>();
+  const editActivityId = Number(params.activityId);
+  const editing = params.mode === 'edit' && Number.isInteger(editActivityId) && editActivityId > 0;
+  const targetActivityId = editing ? editActivityId : activityId;
   const router = useRouter();
   const theme = useTheme();
   const [rpe, setRpe] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const canSave = rpe !== null || notes.trim().length > 0;
-  const skip = useCallback(() => router.replace(routes.history), [router]);
+  const skip = useCallback(() => editing ? router.back() : router.replace(routes.history), [editing, router]);
+
+  useEffect(() => {
+    let active = true;
+    if (!editing) return () => { active = false; };
+    void initializeDatabase().then(database => new ActivitiesRepository(database).buscarPorId(editActivityId)).then(activity => {
+      if (active && activity) { setRpe(activity.rpe); setNotes(activity.notes ?? ''); }
+    });
+    return () => { active = false; };
+  }, [editActivityId, editing]);
 
   useFocusEffect(useCallback(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => { skip(); return true; });
@@ -29,16 +42,17 @@ export default function RpeScreen() {
   }, [skip]));
 
   async function save() {
-    if (activityId === null || !canSave || saving) return;
+    if (targetActivityId === null || !canSave || saving) return;
     setSaving(true);
     try {
       const database = await initializeDatabase();
-      await saveActivityEvaluation(new ActivitiesRepository(database), activityId, rpe, notes);
-      router.replace(routes.history);
+      await saveActivityEvaluation(new ActivitiesRepository(database), targetActivityId, rpe, notes);
+      if (editing) router.back();
+      else router.replace(routes.history);
     } finally { setSaving(false); }
   }
 
-  return <Screen canGoBack onBack={skip} title="Como foi o treino?" footer={<View style={styles.footer}><Button disabled={!canSave || saving} onPress={() => { void save(); }} variant={canSave ? 'primary' : 'secondary'}>Salvar avaliação</Button><Button onPress={skip} variant={canSave ? 'secondary' : 'primary'}>Salvar sem avaliar</Button></View>}>
+  return <Screen canGoBack onBack={skip} title="Como foi o treino?" footer={<View style={styles.footer}><Button disabled={!canSave || saving} onPress={() => { void save(); }} variant={canSave ? 'primary' : 'secondary'}>Salvar avaliação</Button>{editing ? <Button onPress={skip} variant="secondary">Cancelar</Button> : <Button onPress={skip} variant={canSave ? 'secondary' : 'primary'}>Salvar sem avaliar</Button>}</View>}>
     <Text style={[styles.intro, { color: theme.colors.textSecondary }]}>O esforço percebido é opcional. Você pode responder depois, pelo histórico.</Text>
     <View style={styles.rpeHeader}><Text style={[styles.section, { color: theme.colors.textSecondary }]}>RPE</Text><Text style={[styles.reading, { color: rpe === null ? theme.colors.textSecondary : theme.colors.action }]}>{rpeReading(rpe)}</Text></View>
     <View style={styles.grid}>{RPE_VALUES.map(value => { const selected = value === rpe; return <Pressable accessibilityLabel={`RPE ${value}`} accessibilityRole="button" accessibilityState={{ selected }} key={value} onPress={() => setRpe(current => current === value ? null : value)} style={[styles.rpeButton, { backgroundColor: selected ? theme.colors.action : theme.colors.surface, borderColor: selected ? theme.colors.action : theme.colors.border }]}><Text style={[styles.rpeValue, { color: selected ? '#FFFFFF' : theme.colors.text }]}>{value}</Text></Pressable>; })}</View>

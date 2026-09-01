@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
@@ -17,6 +17,7 @@ const EMPTY_SUMMARY: HomeSummary = { latestActivity: null, trainingCount: 0 };
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { startFreeRun } = useLocalSearchParams<{ startFreeRun?: string }>();
   const activity = useActivity();
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [fix, setFix] = useState<InitialFixState>({ status: 'sem_precisao_aceitavel', location: null });
@@ -24,6 +25,7 @@ export default function HomeScreen() {
   const [starting, setStarting] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const attempt = useRef<InitialFixAttempt | null>(null);
+  const autoStartHandled = useRef(false);
   const waitingRef = useRef(false);
 
   useFocusEffect(useCallback(() => {
@@ -58,6 +60,12 @@ export default function HomeScreen() {
       else { setSheetVisible(true); setStarting(false); }
     }, 15_000, true);
   };
+
+  useEffect(() => {
+    if (startFreeRun !== '1' || autoStartHandled.current) return;
+    autoStartHandled.current = true;
+    void beginFreeRun();
+  }, [startFreeRun]);
 
   const dismissSheet = () => { attempt.current?.cancel(); attempt.current = null; setSheetVisible(false); setWaiting(false); waitingRef.current = false; };
   const waitForSignal = () => {
