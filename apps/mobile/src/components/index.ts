@@ -1,4 +1,5 @@
 export * from './bottom-sheet';
+export * from './activity-splits';
 export * from './button';
 export * from './chip';
 export * from './confirm-dialog';

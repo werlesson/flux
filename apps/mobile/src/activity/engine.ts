@@ -4,11 +4,13 @@ import { type ActivityPointInput,ActivityPointsRepository } from '@/database/rep
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import type { Activity, ActivityStatusSlug } from '@/database/types';
 import type { GpsSample } from '@/gps/filter';
+import { haversineDistanceMeters } from '@/gps/distance';
 import { GpsFilterOrchestrator } from '@/gps/orchestrator';
 import { addSignalSample, createSignalQualityState, evaluateSignalTimeout, type SignalQuality, type SignalQualityState } from '@/gps/signal-quality';
 import { activityPointBatchFlushIntervalSeconds, activityPointBatchSize, activityStatePersistenceIntervalSeconds, currentPaceMinimumDurationSeconds, currentPaceWindowSeconds, movingMinimumDisplacementMeters, movingSpeedThresholdMetersPerSecond } from '@/gps/thresholds';
 
 import { type ActivityClock,elapsedSeconds, paceSecondsPerKm, systemActivityClock } from './clock';
+import { KilometerSplitDetector } from './split-detector';
 
 export interface ActivityMetricsSnapshot { elapsed: number; moving: number; distance: number; currentPace: number | null; averagePace: number | null }
 export interface ActivityEngineOptions { pointBatchSize?: number; pointBatchFlushIntervalSeconds?: number; persistenceIntervalSeconds?: number; paceWindowSeconds?: number; clock?: ActivityClock; onStartError?: (message: string) => void }
@@ -30,6 +32,7 @@ export class ActivityEngine {
   private lastCheckpointAt = 0;
   private lastPointFlushAt = 0;
   private segmentIndex = 0;
+  private splitDetector = new KilometerSplitDetector();
   private writeChain: Promise<void> = Promise.resolve();
   private pendingWriteError: unknown = null;
   private readonly activities: ActivitiesRepository;
@@ -82,12 +85,18 @@ export class ActivityEngine {
     this.movingSeconds = activity.moving_duration_seconds;
     this.distanceMeters = activity.distance_meters;
     this.lastCheckpointAt = this.clock.now(); this.lastPointFlushAt = this.clock.now();
+    const validPoints = await this.database.all<{ latitude: number; longitude: number; segment_index: number }>('SELECT latitude,longitude,segment_index FROM activity_points WHERE activity_id=? AND is_valid=1 ORDER BY recorded_at,id', [activity.id]);
+    if (validPoints.length) {
+      this.distanceMeters = validPoints.slice(1).reduce((total, point, index) => total + (point.segment_index === validPoints[index]!.segment_index ? haversineDistanceMeters(validPoints[index]!, point) : 0), 0);
+    }
     const [lastPoint] = await this.database.all<{ segment_index: number }>('SELECT segment_index FROM activity_points WHERE activity_id=? ORDER BY recorded_at DESC LIMIT 1', [activity.id]);
     this.segmentIndex = lastPoint?.segment_index ?? 0;
     const pauses = await this.database.all<{ started_at: string; finished_at: string | null }>('SELECT started_at,finished_at FROM activity_pause_intervals WHERE activity_id=? ORDER BY started_at', [activity.id]);
     this.accumulatedPausedMilliseconds = pauses.reduce((total, pause) => total + (pause.finished_at ? Math.max(0, Date.parse(pause.finished_at) - Date.parse(pause.started_at)) : 0), 0);
     const openPause = pauses.find(pause => pause.finished_at === null);
     this.pausedAt = openPause ? Date.parse(openPause.started_at) : null;
+    const persistedSplits = await this.splits.listar(activity.id);
+    this.splitDetector = new KilometerSplitDetector(persistedSplits.at(-1)?.kilometer ?? 0, persistedSplits.reduce((total, split) => total + split.duration_seconds, 0));
     await this.restoreFilterState(activity.id);
     return activity;
   }
@@ -202,6 +211,8 @@ export class ActivityEngine {
     this.pending.push({ activity_id: this.activity.id, latitude: sample.latitude, longitude: sample.longitude, altitude: sample.altitude, accuracy: sample.accuracy, speed: sample.speed, recorded_at: new Date(sample.recordedAt), is_valid: accepted, rejection_reason_slug: accepted ? null : result.decisao.motivo, segment_index: this.segmentIndex });
     if (accepted) {
       const increment = result.decisao.distanciaIncremental;
+      const previousDistance = this.distanceMeters;
+      const previousMoving = this.movingSeconds;
       this.distanceMeters += increment;
       if (sample.accuracy != null) this.signal = addSignalSample(this.signal, sample.accuracy, sample.recordedAt);
       if (this.lastAcceptedAt != null && !result.decisao.descontinuidade) {
@@ -212,6 +223,11 @@ export class ActivityEngine {
       this.lastAcceptedAt = sample.recordedAt;
       this.recent.push({ at: sample.recordedAt, distance: increment });
       this.recent = this.recent.filter(item => item.at >= sample.recordedAt - this.paceWindow * 1000);
+      const closedSplits = this.splitDetector.detect(previousDistance, this.distanceMeters, previousMoving, this.movingSeconds);
+      if (closedSplits.length) {
+        await this.flush(sample.recordedAt);
+        for (const split of closedSplits) await this.splits.fecharSeAusente(this.activity.id, split.kilometer, split.durationSeconds, split.paceSecondsPerKm, new Date(sample.recordedAt));
+      }
     }
     if (this.pending.length >= this.batchSize || sample.recordedAt - this.lastPointFlushAt >= this.batchFlushSeconds * 1000) await this.flush(sample.recordedAt);
     this.checkpoint(new Date(sample.recordedAt));
