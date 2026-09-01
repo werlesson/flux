@@ -3,6 +3,7 @@ import { ActivitiesRepository } from '@/database/repositories/activities';
 import { type ActivityPointInput,ActivityPointsRepository } from '@/database/repositories/activity-points';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import { ActivityStepsRepository } from '@/database/repositories/activity-steps';
+import { AppPreferencesRepository } from '@/database/repositories/preferences';
 import type { Activity, ActivityStatusSlug, ActivityTypeSlug } from '@/database/types';
 import type { GpsSample } from '@/gps/filter';
 import { haversineDistanceMeters } from '@/gps/distance';
@@ -11,6 +12,7 @@ import { addSignalSample, createSignalQualityState, evaluateSignalTimeout, type 
 import { activityPointBatchFlushIntervalSeconds, activityPointBatchSize, activityStatePersistenceIntervalSeconds, currentPaceMinimumDurationSeconds, currentPaceWindowSeconds, movingMinimumDisplacementMeters, movingSpeedThresholdMetersPerSecond } from '@/gps/thresholds';
 
 import { type ActivityClock,elapsedSeconds, paceSecondsPerKm, systemActivityClock } from './clock';
+import { GuidanceService, verbalizeSplit, verbalizeStep } from './guidance';
 import { KilometerSplitDetector } from './split-detector';
 import { expandTrainingBlocks, TrainingEngine, type TrainingBlockWithSteps } from './training-engine';
 
@@ -29,7 +31,8 @@ export interface StructuredStepSnapshot {
   next: { name: string; slug: string; plannedDurationSeconds: number } | null;
 }
 export interface ActivityRecoverySnapshot extends ActivityMetricsSnapshot { activityId: number; activityType: ActivityTypeSlug; trainingName: string | null; startedAt: Date; currentStep: StructuredStepSnapshot | null }
-export interface ActivityEngineOptions { pointBatchSize?: number; pointBatchFlushIntervalSeconds?: number; persistenceIntervalSeconds?: number; paceWindowSeconds?: number; clock?: ActivityClock; onStartError?: (message: string) => void }
+export interface ActivityGuidance { emit(cue: { text: string; haptic?: 'default' | 'success' }): Promise<void>; drain?(): Promise<void>; setPreference?(key: 'audio_cues_enabled' | 'haptic_cues_enabled', value: boolean): Promise<void> }
+export interface ActivityEngineOptions { pointBatchSize?: number; pointBatchFlushIntervalSeconds?: number; persistenceIntervalSeconds?: number; paceWindowSeconds?: number; clock?: ActivityClock; onStartError?: (message: string) => void; guidance?: ActivityGuidance }
 type ValidSample = { at: number; distance: number };
 
 export class InvalidActivityTransitionError extends Error {}
@@ -65,6 +68,7 @@ export class ActivityEngine {
   private readonly checkpointSeconds: number;
   private readonly paceWindow: number;
   private readonly onStartError?: (message: string) => void;
+  private readonly guidance: ActivityGuidance;
 
   constructor(private readonly database: DatabaseAdapter, options: ActivityEngineOptions = {}) {
     this.activities = new ActivitiesRepository(database);
@@ -77,6 +81,7 @@ export class ActivityEngine {
     this.checkpointSeconds = options.persistenceIntervalSeconds ?? activityStatePersistenceIntervalSeconds;
     this.paceWindow = options.paceWindowSeconds ?? currentPaceWindowSeconds;
     this.onStartError = options.onStartError;
+    this.guidance = options.guidance ?? new GuidanceService(database);
     this.orchestrator = new GpsFilterOrchestrator(undefined, (sample, result) => this.consume(sample, result));
   }
 
@@ -115,6 +120,7 @@ export class ActivityEngine {
       this.attachTrainingEngine(created.id);
       this.activity = created; this.statusValue = 'in_progress'; this.lastCheckpointAt = startedAt.getTime(); this.lastPointFlushAt = startedAt.getTime();
       this.currentStepValue = await this.loadCurrentStep(created.id, startedAt);
+      await this.trainingEngine!.announceCurrentStep();
       return created;
     } catch (error) {
       this.onStartError?.('Não foi possível iniciar a atividade. Tente novamente.');
@@ -181,6 +187,10 @@ export class ActivityEngine {
   async advanceTraining(at = new Date(this.clock.now())) { if (!this.trainingEngine || this.statusValue === 'paused') return null; const state=await this.trainingEngine.advance(at); this.currentStepValue=await this.loadCurrentStep(this.activity!.id, at); return state; }
   async skipTrainingStep(at = new Date(this.clock.now())) { if (!this.trainingEngine || this.statusValue !== 'in_progress') return null; const state=await this.trainingEngine.skip(at); this.currentStepValue=await this.loadCurrentStep(this.activity!.id, at); return state; }
   onTrainingFinished(listener: (activityId:number)=>void|Promise<void>): ()=>void { this.trainingFinishedListeners.add(listener); return () => this.trainingFinishedListeners.delete(listener); }
+  async setGuidancePreference(key: 'audio_cues_enabled' | 'haptic_cues_enabled', value: boolean): Promise<void> {
+    if (this.guidance.setPreference) await this.guidance.setPreference(key, value);
+    else await new AppPreferencesRepository(this.database).gravar(key, value);
+  }
 
   async ingest(sample: GpsSample): Promise<void> {
     if (this.statusValue !== 'in_progress') return;
@@ -191,6 +201,7 @@ export class ActivityEngine {
     await this.flush();
     this.checkpoint(new Date(this.clock.now()), true);
     await this.drainWrites();
+    await this.guidance.drain?.();
   }
 
   metrics(now = this.clock.now()): ActivityMetricsSnapshot {
@@ -295,8 +306,11 @@ export class ActivityEngine {
 
   private attachTrainingEngine(activityId: number): void {
     this.trainingEngine = new TrainingEngine(this.database, activityId);
+    this.trainingEngine.onStepStarted(step => this.guidance.emit({ text: verbalizeStep(step.slug as import('@/database/types').StepTypeSlug, step.plannedDurationSeconds, step.instructions) }));
+    this.trainingEngine.onThirtySecondsRemaining(() => this.guidance.emit({ text: 'Faltam trinta segundos.' }));
     this.trainingEngine.onFinished(async id => {
       this.currentStepValue = null;
+      await this.guidance.emit({ text: 'Treino concluído.', haptic: 'success' });
       for (const listener of this.trainingFinishedListeners) await listener(id);
     });
   }
@@ -357,7 +371,10 @@ export class ActivityEngine {
       const closedSplits = this.splitDetector.detect(previousDistance, this.distanceMeters, previousMoving, this.movingSeconds);
       if (closedSplits.length) {
         await this.flush(sample.recordedAt);
-        for (const split of closedSplits) await this.splits.fecharSeAusente(this.activity.id, split.kilometer, split.durationSeconds, split.paceSecondsPerKm, new Date(sample.recordedAt));
+        for (const split of closedSplits) {
+          const inserted = await this.splits.fecharSeAusente(this.activity.id, split.kilometer, split.durationSeconds, split.paceSecondsPerKm, new Date(sample.recordedAt));
+          if (inserted) await this.guidance.emit({ text: verbalizeSplit(split.kilometer, split.paceSecondsPerKm) });
+        }
       }
     }
     if (this.pending.length >= this.batchSize || sample.recordedAt - this.lastPointFlushAt >= this.batchFlushSeconds * 1000) await this.flush(sample.recordedAt);

@@ -42,13 +42,22 @@ export class AppPreferencesRepository {
 
   async gravar(chave: string, valor: PreferenceValue, at = new Date()): Promise<void> {
     const values = await this.carregar();
-    const timestamp = now(at);
-    await this.database.run(
-      `INSERT INTO app_preferences(key,value,created_at,updated_at) VALUES(?,?,?,?)
-       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at`,
-      [chave, JSON.stringify(valor), timestamp, timestamp],
-    );
+    const existed = values.has(chave);
+    const previous = values.get(chave);
+    // Publish before the SQLite await so an activity cue fired in the same turn
+    // observes the switch immediately.
     values.set(chave, valor);
+    const timestamp = now(at);
+    try {
+      await this.database.run(
+        `INSERT INTO app_preferences(key,value,created_at,updated_at) VALUES(?,?,?,?)
+         ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at`,
+        [chave, JSON.stringify(valor), timestamp, timestamp],
+      );
+    } catch (error) {
+      if (existed) values.set(chave, previous!); else values.delete(chave);
+      throw error;
+    }
   }
 }
 

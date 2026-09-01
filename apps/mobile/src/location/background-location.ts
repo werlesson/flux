@@ -27,6 +27,7 @@ export function createLocationUpdateOptions(trainingName?: string | null): Locat
 export const locationUpdateOptions = createLocationUpdateOptions();
 
 type BackgroundGpsConsumer = (sample: GpsSample) => void | Promise<void>;
+type BackgroundGpsDrain = () => void | Promise<void>;
 
 let headlessEnginePromise: Promise<ActivityEngine> | null = null;
 
@@ -45,10 +46,18 @@ const persistentBackgroundConsumer: BackgroundGpsConsumer = async sample => {
 };
 
 let gpsConsumer: BackgroundGpsConsumer = persistentBackgroundConsumer;
+let gpsDrain: BackgroundGpsDrain = async () => {
+  await (await getHeadlessEngine()).onBackground();
+};
 
 /** Connects the native task to the mounted activity engine when the UI process is alive. */
-export function setBackgroundGpsConsumer(consumer?: BackgroundGpsConsumer): void {
+export function setBackgroundGpsConsumer(consumer?: BackgroundGpsConsumer, drain?: BackgroundGpsDrain): void {
   gpsConsumer = consumer ?? persistentBackgroundConsumer;
+  gpsDrain = drain ?? (consumer
+    ? async () => undefined
+    : async () => {
+        await (await getHeadlessEngine()).onBackground();
+      });
 }
 
 /** Kept as an integration seam for callers that own an orchestrator. */
@@ -58,7 +67,10 @@ export function setBackgroundGpsOrchestrator(orchestrator: GpsFilterOrchestrator
   });
 }
 
-TaskManager.defineTask<{ locations: Location.LocationObject[] }>(LOCATION_TASK_NAME, async ({ data, error }) => {
+export async function handleBackgroundLocationTask({ data, error }: {
+  data: { locations: Location.LocationObject[] } | null;
+  error: unknown;
+}): Promise<void> {
   if (error || !data) return;
   for (const location of data.locations) {
     await gpsConsumer({
@@ -72,8 +84,10 @@ TaskManager.defineTask<{ locations: Location.LocationObject[] }>(LOCATION_TASK_N
   }
 
   // A headless execution may be suspended immediately after this callback.
-  if (gpsConsumer === persistentBackgroundConsumer) await (await getHeadlessEngine()).onBackground();
-});
+  await gpsDrain();
+}
+
+TaskManager.defineTask<{ locations: Location.LocationObject[] }>(LOCATION_TASK_NAME, handleBackgroundLocationTask);
 
 export async function startLocationTracking(foregroundGranted: boolean, trainingName?: string | null): Promise<void> {
   if (!foregroundGranted) throw new Error('Permissão de localização em primeiro plano é obrigatória');

@@ -6,6 +6,7 @@ export * from './chip';
 export * from './confirm-dialog';
 export * from './empty-state';
 export * from './gps-status-pill';
+export * from './guidance-sheet';
 export * from './metrics';
 export * from './screen';
 export * from './section-header';

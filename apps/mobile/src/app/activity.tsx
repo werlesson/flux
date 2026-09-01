@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useActivity } from '@/activity/activity-context';
 import { createActionGuard, formatActivityDistance, formatActivityPace, formatActivityTime, signalQualityToGpsStatus } from '@/activity/presentation';
-import { Button, GpsStatusPill, Screen } from '@/components';
+import { Button, GpsStatusPill, GuidanceSheet, Screen } from '@/components';
 import { fontSizes, tabularMetric } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { routes } from '@/navigation/routes';
@@ -16,6 +16,7 @@ export default function ActivityScreen() {
   const guard = useRef(createActionGuard()).current;
   const paused = activity.status === 'paused';
   const noSignal = activity.signalQuality === 'sem_sinal';
+  const [guidanceVisible, setGuidanceVisible] = useState(false);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -25,14 +26,14 @@ export default function ActivityScreen() {
   const finish = () => guard(async () => { await activity.finish(); router.replace(routes.activityResult); });
   return <Screen scrollable={false} testID="free-run-activity-screen">
     <View style={styles.content}>
-      <View style={styles.contextRow}><Text style={[styles.context, { color: theme.colors.textSecondary, fontFamily: theme.fonts.data.semibold }]}>CORRIDA LIVRE</Text>{paused ? <Text style={[styles.pausedBadge, { borderColor: theme.colors.highlight, color: theme.colors.highlight }]}>PAUSADA</Text> : null}<View style={styles.contextSpacer} /><Pressable accessibilityRole="button" hitSlop={10} onPress={() => router.replace(routes.home)}><Text style={[styles.homeLink, { color: theme.colors.textSecondary }]}>Início</Text></Pressable></View>
+      <View style={styles.contextRow}><Text style={[styles.context, { color: theme.colors.textSecondary, fontFamily: theme.fonts.data.semibold }]}>CORRIDA LIVRE</Text>{paused ? <Text style={[styles.pausedBadge, { borderColor: theme.colors.highlight, color: theme.colors.highlight }]}>PAUSADA</Text> : null}<View style={styles.contextSpacer} /><Pressable accessibilityLabel="Orientações" accessibilityRole="button" hitSlop={10} onPress={() => setGuidanceVisible(true)}><Text style={{ color: theme.colors.text, fontSize: 17 }}>◖))</Text></Pressable><Pressable accessibilityRole="button" hitSlop={10} onPress={() => router.replace(routes.home)}><Text style={[styles.homeLink, { color: theme.colors.textSecondary }]}>Início</Text></Pressable></View>
       <Metric label={paused ? 'TEMPO · PARADO' : 'TEMPO'} value={formatActivityTime(activity.elapsed)} color={paused ? theme.colors.highlight : theme.colors.text} size="time" />
       <Metric label={noSignal ? 'DISTÂNCIA · SEM AVANÇAR' : 'DISTÂNCIA'} value={formatActivityDistance(activity.distance)} color={noSignal ? theme.colors.textSecondary : theme.colors.text} size="distance" />
       <View style={styles.paces}><Pace label="Pace atual" value={paused || noSignal ? '—' : formatActivityPace(activity.currentPace)} /><Pace label="Pace médio" value={formatActivityPace(activity.averagePace)} /></View>
       <View style={styles.spacer} />
       {paused ? <View style={styles.pausedActions}><Button onPress={() => void guard(activity.resume)}>RETOMAR</Button><Button variant="destructive-outline" onPress={() => void finish()}>FINALIZAR</Button></View> : <Button activity onPress={() => void guard(activity.pause)}>PAUSAR</Button>}
       <GpsStatusPill status={signalQualityToGpsStatus(activity.signalQuality)} />
-    </View>
+    </View><GuidanceSheet visible={guidanceVisible} structured={false} onPreferenceChange={activity.setGuidancePreference} onDismiss={() => setGuidanceVisible(false)} />
   </Screen>;
 }
 

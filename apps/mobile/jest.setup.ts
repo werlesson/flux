@@ -24,7 +24,7 @@ jest.mock('expo-task-manager', () => ({
 jest.mock('expo-speech', () => ({
   getAvailableVoicesAsync: jest.fn(),
   isSpeakingAsync: jest.fn(),
-  speak: jest.fn(),
+  speak: jest.fn((_text, options) => options?.onDone?.()),
   stop: jest.fn(),
 }));
 

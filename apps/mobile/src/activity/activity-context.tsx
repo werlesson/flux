@@ -9,7 +9,6 @@ import { BACKGROUND_LOCATION_WARNING, setBackgroundGpsConsumer, startLocationTra
 import { LocationPermissions } from '@/location/permissions';
 
 import { ActivityEngine, type ActivityMetricsSnapshot, type ActivityRecoverySnapshot } from './engine';
-import { announceTrainingFinished } from './training-guidance';
 
 interface ActivityContextValue extends ActivityMetricsSnapshot {
   status: ActivityStatusSlug | null;
@@ -25,6 +24,7 @@ interface ActivityContextValue extends ActivityMetricsSnapshot {
   pause(): Promise<void>;
   resume(): Promise<void>;
   skipTrainingStep(): Promise<void>;
+  setGuidancePreference(key: 'audio_cues_enabled' | 'haptic_cues_enabled', value: boolean): Promise<void>;
   finish(): Promise<void>;
   discard(): Promise<void>;
   resumeInterrupted(): Promise<void>;
@@ -52,11 +52,10 @@ export function ActivityProvider({ children }: PropsWithChildren) {
       restoredEngine.onTrainingFinished(async () => {
         if (!mounted) return;
         setTrainingFinished(true);
-        await announceTrainingFinished(database);
         refresh();
       });
       setPendingRecovery(await restoredEngine.recoverySnapshot());
-      setBackgroundGpsConsumer(sample => restoredEngine.ingest(sample));
+      setBackgroundGpsConsumer(sample => restoredEngine.ingest(sample), () => restoredEngine.onBackground());
       setEngine(restoredEngine);
     });
     return () => {
@@ -129,6 +128,7 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     pause: () => action(item => item.pause()),
     resume: () => action(item => item.resume()),
     skipTrainingStep: () => action(item => item.skipTrainingStep()),
+    setGuidancePreference: (key, enabled) => action(item => item.setGuidancePreference(key, enabled)),
     finish: () => action(async item => { await item.finish(); await stopLocationTracking(); }),
     discard: () => action(async item => { await item.discard(); await stopLocationTracking(); }),
     resumeInterrupted: () => action(async item => {
