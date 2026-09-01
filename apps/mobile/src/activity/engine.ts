@@ -15,7 +15,20 @@ import { KilometerSplitDetector } from './split-detector';
 import { expandTrainingBlocks, TrainingEngine, type TrainingBlockWithSteps } from './training-engine';
 
 export interface ActivityMetricsSnapshot { elapsed: number; moving: number; distance: number; currentPace: number | null; averagePace: number | null }
-export interface ActivityRecoverySnapshot extends ActivityMetricsSnapshot { activityId: number; activityType: ActivityTypeSlug; trainingName: string | null; startedAt: Date; currentStep: { name: string; position: number; total: number } | null }
+export interface StructuredStepSnapshot {
+  name: string;
+  slug: string;
+  position: number;
+  total: number;
+  repetitionIndex: number;
+  repeatCount: number;
+  plannedDurationSeconds: number;
+  actualDurationSeconds: number;
+  remainingSeconds: number;
+  instructions: string | null;
+  next: { name: string; slug: string; plannedDurationSeconds: number } | null;
+}
+export interface ActivityRecoverySnapshot extends ActivityMetricsSnapshot { activityId: number; activityType: ActivityTypeSlug; trainingName: string | null; startedAt: Date; currentStep: StructuredStepSnapshot | null }
 export interface ActivityEngineOptions { pointBatchSize?: number; pointBatchFlushIntervalSeconds?: number; persistenceIntervalSeconds?: number; paceWindowSeconds?: number; clock?: ActivityClock; onStartError?: (message: string) => void }
 type ValidSample = { at: number; distance: number };
 
@@ -71,6 +84,7 @@ export class ActivityEngine {
   get status(): ActivityStatusSlug | null { return this.statusValue; }
   get signalQuality(): SignalQuality { return evaluateSignalTimeout(this.signal, this.clock.now()).quality; }
   get currentStep(): ActivityRecoverySnapshot['currentStep'] { return this.currentStepValue; }
+  get trainingName(): string | null { return this.activity?.training_session_name ?? null; }
 
   async startFreeRun(userId: number, startedAt = new Date(this.clock.now())): Promise<Activity> {
     this.releaseFinishedActivity();
@@ -99,8 +113,8 @@ export class ActivityEngine {
       const snapshots = expandTrainingBlocks(blocks);
       const created = await this.activities.criarComEtapas({ user_id:userId,activity_type_slug:'structured',training_session_id:trainingSessionId,training_session_name:trainingName,started_at:startedAt }, snapshots, startedAt);
       this.attachTrainingEngine(created.id);
-      this.currentStepValue = await this.loadCurrentStep(created.id);
       this.activity = created; this.statusValue = 'in_progress'; this.lastCheckpointAt = startedAt.getTime(); this.lastPointFlushAt = startedAt.getTime();
+      this.currentStepValue = await this.loadCurrentStep(created.id, startedAt);
       return created;
     } catch (error) {
       this.onStartError?.('Não foi possível iniciar a atividade. Tente novamente.');
@@ -140,7 +154,7 @@ export class ActivityEngine {
   }
 
   async pause(at = new Date(this.clock.now())): Promise<void> {
-    if (this.trainingEngine) await this.trainingEngine.advance(at);
+    if (this.trainingEngine) { await this.trainingEngine.advance(at); this.currentStepValue = await this.loadCurrentStep(this.activity!.id, at); }
     this.requireTransition('paused');
     await this.flush();
     this.checkpoint(at, true);
@@ -161,11 +175,11 @@ export class ActivityEngine {
     });
     if (this.pausedAt !== null) this.accumulatedPausedMilliseconds += Math.max(0, at.getTime() - this.pausedAt);
     this.statusValue = 'in_progress'; this.pausedAt = null; this.lastAcceptedAt = null;
-    if (this.trainingEngine) await this.trainingEngine.advance(at);
+    if (this.trainingEngine) { await this.trainingEngine.advance(at); this.currentStepValue = await this.loadCurrentStep(this.activity!.id, at); }
   }
 
-  async advanceTraining(at = new Date(this.clock.now())) { if (!this.trainingEngine) return null; const state=await this.trainingEngine.advance(at); this.currentStepValue=await this.loadCurrentStep(this.activity!.id); return state; }
-  async skipTrainingStep(at = new Date(this.clock.now())) { if (!this.trainingEngine) return null; const state=await this.trainingEngine.skip(at); this.currentStepValue=await this.loadCurrentStep(this.activity!.id); return state; }
+  async advanceTraining(at = new Date(this.clock.now())) { if (!this.trainingEngine || this.statusValue === 'paused') return null; const state=await this.trainingEngine.advance(at); this.currentStepValue=await this.loadCurrentStep(this.activity!.id, at); return state; }
+  async skipTrainingStep(at = new Date(this.clock.now())) { if (!this.trainingEngine || this.statusValue !== 'in_progress') return null; const state=await this.trainingEngine.skip(at); this.currentStepValue=await this.loadCurrentStep(this.activity!.id, at); return state; }
   onTrainingFinished(listener: (activityId:number)=>void|Promise<void>): ()=>void { this.trainingFinishedListeners.add(listener); return () => this.trainingFinishedListeners.delete(listener); }
 
   async ingest(sample: GpsSample): Promise<void> {
@@ -244,14 +258,39 @@ export class ActivityEngine {
     this.trainingEngine = null;
   }
 
-  private async loadCurrentStep(activityId: number): Promise<ActivityRecoverySnapshot['currentStep']> {
-    const [current] = await this.database.all<{ name: string; position: number; total: number }>(
-      `SELECT t.name,s.position,(SELECT COUNT(*) FROM activity_steps WHERE activity_id=s.activity_id) total
+  private async loadCurrentStep(activityId: number, at = new Date(this.clock.now())): Promise<ActivityRecoverySnapshot['currentStep']> {
+    const [current] = await this.database.all<{ name: string; slug: string; position: number; total: number; repetition_index: number; repeat_count: number | null; planned_duration_seconds: number; instructions: string | null; started_at: string }>(
+      `SELECT t.name,t.slug,s.position,s.repetition_index,s.planned_duration_seconds,s.instructions,s.started_at,
+              COALESCE(b.repeat_count,1) repeat_count,
+              (SELECT COUNT(*) FROM activity_steps WHERE activity_id=s.activity_id) total
        FROM activity_steps s JOIN step_types t ON t.id=s.step_type_id
+       LEFT JOIN training_steps source ON source.id=s.training_step_id
+       LEFT JOIN training_blocks b ON b.id=source.training_block_id
        WHERE s.activity_id=? AND s.finished_at IS NULL ORDER BY s.position LIMIT 1`,
       [activityId],
     );
-    return current ? { ...current, position: current.position + 1 } : null;
+    if (!current) return null;
+    const [next] = await this.database.all<{ name: string; slug: string; planned_duration_seconds: number }>(
+      `SELECT t.name,t.slug,s.planned_duration_seconds FROM activity_steps s
+       JOIN step_types t ON t.id=s.step_type_id WHERE s.activity_id=? AND s.position>? ORDER BY s.position LIMIT 1`,
+      [activityId, current.position],
+    );
+    const elapsed = this.trainingEngine
+      ? (await this.trainingEngine.state(at)).elapsedSeconds
+      : Math.max(0, Math.floor((at.getTime() - Date.parse(current.started_at)) / 1000));
+    return {
+      name: current.name,
+      slug: current.slug,
+      position: current.position + 1,
+      total: current.total,
+      repetitionIndex: current.repetition_index,
+      repeatCount: current.repeat_count ?? 1,
+      plannedDurationSeconds: current.planned_duration_seconds,
+      actualDurationSeconds: Math.min(elapsed, current.planned_duration_seconds),
+      remainingSeconds: Math.max(0, current.planned_duration_seconds - elapsed),
+      instructions: current.instructions,
+      next: next ? { name: next.name, slug: next.slug, plannedDurationSeconds: next.planned_duration_seconds } : null,
+    };
   }
 
   private attachTrainingEngine(activityId: number): void {

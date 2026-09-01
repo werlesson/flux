@@ -15,6 +15,7 @@ interface ActivityContextValue extends ActivityMetricsSnapshot {
   status: ActivityStatusSlug | null;
   signalQuality: SignalQuality;
   activityId: number | null;
+  trainingName: string | null;
   pendingRecovery: ActivityRecoverySnapshot | null;
   currentStep: ActivityRecoverySnapshot['currentStep'];
   trainingFinished: boolean;
@@ -23,6 +24,7 @@ interface ActivityContextValue extends ActivityMetricsSnapshot {
   ingest(sample: GpsSample): Promise<void>;
   pause(): Promise<void>;
   resume(): Promise<void>;
+  skipTrainingStep(): Promise<void>;
   finish(): Promise<void>;
   discard(): Promise<void>;
   resumeInterrupted(): Promise<void>;
@@ -94,6 +96,7 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     status: engine?.status ?? null,
     signalQuality: engine?.signalQuality ?? 'sem_sinal',
     activityId: engine?.id ?? null,
+    trainingName: engine?.trainingName ?? null,
     pendingRecovery,
     currentStep: engine?.currentStep ?? null,
     trainingFinished,
@@ -125,6 +128,7 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     ingest: sample => action(item => item.ingest(sample)),
     pause: () => action(item => item.pause()),
     resume: () => action(item => item.resume()),
+    skipTrainingStep: () => action(item => item.skipTrainingStep()),
     finish: () => action(async item => { await item.finish(); await stopLocationTracking(); }),
     discard: () => action(async item => { await item.discard(); await stopLocationTracking(); }),
     resumeInterrupted: () => action(async item => {
