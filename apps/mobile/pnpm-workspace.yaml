@@ -1,6 +1,15 @@
 packages:
   - .
 
+# Instalação achatada, sem os symlinks e sem o nível .pnpm/<pkg>@<versão>_<hash>/.
+# Exigido pelo build nativo: react-native-screens e react-native-worklets
+# compilam C++ via CMake/ninja, e no Windows o caminho real dos módulos sob o
+# layout isolado passava de 170 caracteres antes mesmo de o CMake anexar
+# android/.cxx/Debug/<hash>/<abi>/, estourando o MAX_PATH de 260 — o ninja
+# falhava com "manifest 'build.ninja' still dirty after 100 tries".
+# A doc do Expo também recomenda hoisted porque módulo nativo não pode ser
+# duplicado: só uma versão dele é compilada por build.
+nodeLinker: hoisted
+
 allowBuilds:
-  better-sqlite3: true
   unrs-resolver: true
