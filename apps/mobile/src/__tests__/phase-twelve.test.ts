@@ -53,12 +53,12 @@ describe('fase 12 — resultado e RPE', () => {
   it('as telas contêm os textos e interações obrigatórios', () => {
     const result = readFileSync(join(__dirname, '../app/activity-result.tsx'), 'utf8');
     const rpe = readFileSync(join(__dirname, '../app/rpe.tsx'), 'utf8');
-    expect(result).toContain('Atividade concluída'); expect(result).toContain('SEM PERCURSO PARA EXIBIR'); expect(result).toContain('ETAPAS EXECUTADAS ·'); expect(result).toContain('Descartar esta atividade?');
+    expect(result).toContain('Atividade concluída'); expect(result).toContain('ActivityRouteMap'); expect(result).toContain('ETAPAS EXECUTADAS ·'); expect(result).toContain('Descartar esta atividade?');
     expect(rpe).toContain('O esforço percebido é opcional. Você pode responder depois, pelo histórico.'); expect(rpe).toContain('OBSERVAÇÕES · OPCIONAL'); expect(rpe).toContain('current === value ? null : value'); expect(rpe).toContain('minHeight: 84');
   });
   it('força splits vazios quando não há pontos válidos', () => {
     const result = readFileSync(join(__dirname, '../app/activity-result.tsx'), 'utf8');
-    expect(result).toContain('<ActivitySplits splits={data.validPoints > 0 ? data.splits : []} />');
+    expect(result).toContain('<ActivitySplits splits={data.points.length > 0 ? data.splits : []} />');
   });
 });
 

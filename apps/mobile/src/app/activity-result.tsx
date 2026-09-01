@@ -5,17 +5,18 @@ import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useActivity } from '@/activity/activity-context';
 import { discardSummary, resultMetrics, resultSubtitle } from '@/activity/result';
 import { ActivitySplits } from '@/components/activity-splits';
-import { Button, Card, ConfirmDialog, MetricGrid, MetricTile, Screen } from '@/components';
+import { ActivityRouteMap, Button, ConfirmDialog, MetricGrid, MetricTile, Screen } from '@/components';
 import { initializeDatabase } from '@/database';
 import { ActivitiesRepository } from '@/database/repositories/activities';
+import { ActivityPointsRepository } from '@/database/repositories/activity-points';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import { ActivityStepsRepository, type ActivityStepResult } from '@/database/repositories/activity-steps';
-import type { Activity, ActivitySplit, StepExecutionStatusSlug } from '@/database/types';
+import type { Activity, ActivityPoint, ActivitySplit, StepExecutionStatusSlug } from '@/database/types';
 import { useTheme } from '@/hooks/use-theme';
 import { routes } from '@/navigation/routes';
 import { formatDuration } from '@/utils/formatters';
 
-type ResultData = { activity: Activity; validPoints: number; splits: ActivitySplit[]; steps: ActivityStepResult[] };
+type ResultData = { activity: Activity; points: ActivityPoint[]; splits: ActivitySplit[]; steps: ActivityStepResult[] };
 const STATUS: Record<StepExecutionStatusSlug, string> = { completed: 'Concluída', skipped: 'Pulada', not_performed: 'Não realizada' };
 
 export default function ActivityResultScreen() {
@@ -38,15 +39,14 @@ export default function ActivityResultScreen() {
     void initializeDatabase().then(async database => {
       const activity = await new ActivitiesRepository(database).buscarPorId(activityId);
       if (!activity) return null;
-      const [{ count: validPoints }] = await database.all<{ count: number }>('SELECT COUNT(*) count FROM activity_points WHERE activity_id=? AND is_valid=1', [activityId]);
-      const [splits, steps] = await Promise.all([new ActivitySplitsRepository(database).listar(activityId), new ActivityStepsRepository(database).listarResultado(activityId)]);
-      return { activity, validPoints, splits, steps };
+      const [points, splits, steps] = await Promise.all([new ActivityPointsRepository(database).listarValidos(activityId), new ActivitySplitsRepository(database).listar(activityId), new ActivityStepsRepository(database).listarResultado(activityId)]);
+      return { activity, points, splits, steps };
     }).then(value => { if (active && value) setData(value); });
     return () => { active = false; };
   }, [activityId]);
 
   if (!data) return <Screen canGoBack onBack={goToHistory} title="Atividade concluída"><Text style={{ color: theme.colors.textSecondary }}>Carregando atividade…</Text></Screen>;
-  const metrics = resultMetrics(data.activity, data.validPoints > 0);
+  const metrics = resultMetrics(data.activity, data.points.length > 0);
   const shownSteps = showAllSteps ? data.steps : data.steps.slice(0, 3);
   const summary = discardSummary(data.activity, data.splits.length);
 
@@ -56,8 +56,8 @@ export default function ActivityResultScreen() {
     <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{resultSubtitle(data.activity)}</Text>
     <View style={styles.highlights}><View><Text style={[styles.big, { color: theme.colors.text }]}>{metrics.distance}</Text><Text style={styles.label}>DISTÂNCIA</Text></View><View style={styles.right}><Text style={[styles.big, { color: theme.colors.text }]}>{metrics.elapsed}</Text><Text style={styles.label}>TEMPO TOTAL</Text></View></View>
     <MetricGrid><MetricTile label="PACE MÉDIO" value={metrics.averagePace} /><MetricTile label="MELHOR KM" value={metrics.bestPace} /><MetricTile label="TEMPO CORRENDO" value={metrics.moving} /><MetricTile label="TEMPO CAMINHANDO" value={metrics.stopped} /></MetricGrid>
-    <Card style={[styles.route, !data.steps.length && styles.freeRoute]}>{data.validPoints ? <Text style={{ color: theme.colors.textSecondary }}>Percurso gravado · {data.validPoints} pontos válidos</Text> : <><Text style={[styles.routeTitle, { color: theme.colors.highlight }]}>SEM PERCURSO PARA EXIBIR</Text><Text style={{ color: theme.colors.textSecondary }}>Nenhum ponto de GPS válido foi registrado nesta atividade, então o mapa não é exibido. O tempo gravado é mantido.</Text></>}</Card>
-    <Text style={[styles.section, { color: theme.colors.textSecondary }]}>SPLITS</Text><ActivitySplits splits={data.validPoints > 0 ? data.splits : []} />
+    <View style={{ height: data.steps.length === 0 ? 230 : 170, marginTop: 24 }}><ActivityRouteMap coordinates={data.points.map(point => ({ latitude: point.latitude, longitude: point.longitude, recordedAt: point.recorded_at, segmentIndex: point.segment_index }))} /></View>
+    <Text style={[styles.section, { color: theme.colors.textSecondary }]}>SPLITS</Text><ActivitySplits splits={data.points.length > 0 ? data.splits : []} />
     {data.steps.length ? <View><View style={styles.stepHeader}><Text style={[styles.section, { color: theme.colors.textSecondary }]}>ETAPAS EXECUTADAS · {data.steps.length}</Text>{data.steps.length > 3 ? <Pressable onPress={() => setShowAllSteps(value => !value)}><Text style={{ color: theme.colors.action }}>{showAllSteps ? 'Ver menos' : 'Ver todas'}</Text></Pressable> : null}</View>
       {shownSteps.map(step => <View key={step.id} style={[styles.step, step.status_slug === 'not_performed' && styles.dimmed, { backgroundColor: theme.colors.surface }]}><Text style={[styles.stepName, { color: theme.colors.text }]}>{step.step_type_name}{step.repetition_index > 1 ? ` ${step.repetition_index}` : ''}</Text><Text style={{ color: theme.colors.textSecondary }}>{step.status_slug === 'skipped' ? `${formatDuration(step.actual_duration_seconds)}/${formatDuration(step.planned_duration_seconds)}` : formatDuration(step.status_slug === 'not_performed' ? step.planned_duration_seconds : step.actual_duration_seconds)}</Text><Text style={{ color: step.status_slug === 'completed' ? theme.colors.confirmation : step.status_slug === 'skipped' ? theme.colors.highlight : theme.colors.textSecondary }}>{STATUS[step.status_slug]}</Text></View>)}
     </View> : null}
