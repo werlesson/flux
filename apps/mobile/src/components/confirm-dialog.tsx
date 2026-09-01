@@ -13,9 +13,9 @@ export function ConfirmDialog({ visible, title, message, summary, confirmLabel, 
         <Text accessibilityRole="header" style={[styles.title, { color: theme.colors.text, fontFamily: theme.fonts.title.semibold }]}>{title}</Text>
         <Text style={[styles.message, { color: theme.colors.textSecondary, fontFamily: theme.fonts.title.regular }]}>{message}</Text>
         {summary ? <View style={[styles.summary, { backgroundColor: theme.colors.surface }]}>{summary}</View> : null}
-        <View style={styles.actions}><Button onPress={onCancel} variant="secondary">{cancelLabel}</Button><Button onPress={onConfirm} variant={destructive ? 'destructive' : 'primary'}>{confirmLabel}</Button></View>
+        <View style={styles.actions}>{destructive ? <><Button onPress={onConfirm} variant="destructive">{confirmLabel}</Button><Button onPress={onCancel} variant="secondary">{cancelLabel}</Button></> : <><Button onPress={onCancel} variant="secondary">{cancelLabel}</Button><Button onPress={onConfirm} variant="primary">{confirmLabel}</Button></>}</View>
       </View>
     </View>
   </Modal>;
 }
-const styles = StyleSheet.create({ modal: { alignItems: 'center', flex: 1, justifyContent: 'center', padding: 24 }, backdrop: { backgroundColor: 'rgba(0,0,0,0.4)', ...StyleSheet.absoluteFill }, dialog: { borderRadius: 20, borderWidth: 1, maxWidth: 440, padding: 24, width: '100%' }, title: { fontSize: 24 }, message: { fontSize: 16, lineHeight: 24, marginTop: 10 }, summary: { borderRadius: 12, marginTop: 16, padding: 16 }, actions: { gap: 10, marginTop: 24 } });
+const styles = StyleSheet.create({ modal: { alignItems: 'center', flex: 1, justifyContent: 'center', padding: 24 }, backdrop: { backgroundColor: 'rgba(0,0,0,0.45)', ...StyleSheet.absoluteFill }, dialog: { borderRadius: 20, borderWidth: 1, maxWidth: 440, padding: 24, width: '100%' }, title: { fontSize: 24 }, message: { fontSize: 16, lineHeight: 24, marginTop: 10 }, summary: { borderRadius: 12, marginTop: 16, padding: 16 }, actions: { gap: 10, marginTop: 24 } });

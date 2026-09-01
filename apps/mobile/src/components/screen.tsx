@@ -13,9 +13,10 @@ export interface ScreenProps {
   footer?: ReactNode;
   scrollable?: boolean;
   testID?: string;
+  onBack?: () => void;
 }
 
-export function Screen({ children, title, canGoBack = false, headerAction, footer, scrollable = true, testID }: ScreenProps) {
+export function Screen({ children, title, canGoBack = false, headerAction, footer, scrollable = true, testID, onBack }: ScreenProps) {
   const theme = useTheme();
   const content = scrollable ? (
     <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">{children}</ScrollView>
@@ -26,7 +27,7 @@ export function Screen({ children, title, canGoBack = false, headerAction, foote
       <View pointerEvents="none" testID="screen-warm-wash" style={[styles.wash, { experimental_backgroundImage: `linear-gradient(to bottom, ${theme.isDark ? 'rgba(255,94,58,0.10)' : 'rgba(214,67,26,0.06)'}, transparent)` }]} />
       {(title || canGoBack || headerAction) ? (
         <View style={styles.header}>
-          {canGoBack ? <Pressable accessibilityLabel="Voltar" accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={styles.back}><Text style={[styles.backText, { color: theme.colors.text }]}>‹</Text></Pressable> : <View style={styles.headerSpacer} />}
+          {canGoBack ? <Pressable accessibilityLabel="Voltar" accessibilityRole="button" hitSlop={8} onPress={onBack ?? (() => router.back())} style={styles.back}><Text style={[styles.backText, { color: theme.colors.text }]}>‹</Text></Pressable> : <View style={styles.headerSpacer} />}
           <Text numberOfLines={2} style={[styles.title, { color: theme.colors.text, fontFamily: theme.fonts.title.semibold }]}>{title}</Text>
           <View style={styles.headerAction}>{headerAction}</View>
         </View>

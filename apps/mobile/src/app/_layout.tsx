@@ -52,8 +52,8 @@ export default function RootLayout() {
     <Stack.Screen name="activity" options={{ gestureEnabled: false }} />
     <Stack.Screen name="structured-activity" options={{ gestureEnabled: false }} />
     <Stack.Screen name="activity-blocked" options={{ gestureEnabled: false }} />
-    <Stack.Screen name="activity-result" />
-    <Stack.Screen name="rpe" />
+    <Stack.Screen name="activity-result" options={{ gestureEnabled: false }} />
+    <Stack.Screen name="rpe" options={{ gestureEnabled: false }} />
     <Stack.Screen name="history" />
     <Stack.Screen name="activity-detail" />
   </Stack><ActivityRecoveryDialog /></ActivityProvider>;

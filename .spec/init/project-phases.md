@@ -963,7 +963,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 10.1: Foreground service e coleta em background
 
-- [ ] **Task:** Configurar o foreground service Android da coleta de localização
+- [x] **Task:** Configurar o foreground service Android da coleta de localização
   - **Acceptance criteria:**
     - `startLocationUpdatesAsync` é chamado com as opções de foreground service, subindo o serviço ao iniciar a atividade
     - O serviço sobe junto com a criação da atividade e é encerrado na finalização
@@ -972,7 +972,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `serviço sobe ao iniciar e cai ao finalizar`; `ausência de permissão de background produz aviso explícito`
   - **Traces:** US-6.1, US-2.1
 
-- [ ] **Task:** Garantir a continuidade da coleta e da persistência em background
+- [x] **Task:** Garantir a continuidade da coleta e da persistência em background
   - **Acceptance criteria:**
     - As amostras continuam chegando à task com a tela bloqueada e passam pelo mesmo filtro
     - Pontos e splits continuam sendo persistidos em background
@@ -981,7 +981,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `ingestão em background usa o mesmo filtro do foreground`; `split fecha e é persistido com a tela bloqueada`
   - **Traces:** US-6.1, US-6.2
 
-- [ ] **Task:** Garantir a correção do cronômetro e do estado ao voltar do background
+- [x] **Task:** Garantir a correção do cronômetro e do estado ao voltar do background
   - **Acceptance criteria:**
     - Ao desbloquear, o tempo exibido está correto, sem defasagem acumulada
     - O estado de pausa, a distância e o número de splits refletem o que aconteceu enquanto a tela estava apagada
@@ -993,7 +993,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 > **Limite da plataforma.** O `expo-location` expõe apenas quatro campos para a notificação do foreground service — `notificationTitle`, `notificationBody`, `notificationColor` e `killServiceOnDestroy`. Não há botões de ação, não há flag `ongoing`, e não há forma documentada de atualizar o conteúdo com o serviço rodando. **Não patchear a biblioteca**: essa via foi tentada e descartada por acoplar o projeto a um fork nativo que quebra a cada atualização do SDK. Ações, linha de contexto ao vivo e variações por estado ficam para depois do MVP — ver `.spec/init/design/15-background-notification.md` e as Open Questions.
 
-- [ ] **Task:** Implementar o conteúdo da notificação persistente
+- [x] **Task:** Implementar o conteúdo da notificação persistente
   - **Acceptance criteria:**
     - `notificationTitle` e `notificationBody` são passados no `foregroundService` de `startLocationUpdatesAsync` ao iniciar a atividade
     - O título identifica o app e o estado (`Flux · Atividade em andamento`); o corpo distingue a origem: `Corrida livre` ou o nome do treino
@@ -1004,7 +1004,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/15-background-notification.md (Decisão de escopo)
   - **Traces:** US-6.1
 
-- [ ] **Task:** Garantir o ciclo de vida da notificação
+- [x] **Task:** Garantir o ciclo de vida da notificação
   - **Acceptance criteria:**
     - A notificação sobe junto com o foreground service ao iniciar a atividade
     - Ela desaparece quando a atividade é finalizada ou descartada, porque o serviço é encerrado em ambos os caminhos
@@ -1020,7 +1020,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 **Goal:** Garantir que nenhuma corrida seja perdida por encerramento inesperado do app. · **Depends on:** Phase 9, Phase 10 · **Covers:** workflow 9, design ref 13
 
-- [ ] **Task:** Detectar a atividade pendente na abertura do app
+- [x] **Task:** Detectar a atividade pendente na abertura do app
   - **Acceptance criteria:**
     - Na abertura, o app consulta `activities` por `finished_at IS NULL`
     - Existindo uma, a tela 13 é apresentada sobre a tela 01 antes de qualquer outra interação
@@ -1028,7 +1028,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `atividade sem finished_at é detectada na abertura`; `nenhuma atividade pendente não apresenta o diálogo`
   - **Traces:** US-6.3
 
-- [ ] **Task:** Bloquear o início de nova atividade enquanto houver pendência
+- [x] **Task:** Bloquear o início de nova atividade enquanto houver pendência
   - **Acceptance criteria:**
     - Nem o botão de corrida livre nem a tela de pré-início criam atividade enquanto existir uma pendente
     - O bloqueio vale também para o caminho pela biblioteca de treinos
@@ -1036,7 +1036,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `iniciar corrida livre com pendência é bloqueado`; `iniciar treino com pendência é bloqueado`; `após resolver, o início é liberado`
   - **Traces:** US-6.3, US-2.1, US-2.2
 
-- [ ] **Task:** Implementar o diálogo da tela 13
+- [x] **Task:** Implementar o diálogo da tela 13
   - **Acceptance criteria:**
     - Selo `ATIVIDADE NÃO FINALIZADA`, título `Você tem uma corrida interrompida` e o texto exato do design ref
     - Quadro com `Iniciada`, `Distância`, `Tempo` e `Etapa` lidos do banco; a linha `Etapa` é omitida em corrida livre
@@ -1045,7 +1045,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/13-activity-recovery.png
   - **Traces:** US-6.3
 
-- [ ] **Task:** Implementar a retomada da atividade
+- [x] **Task:** Implementar a retomada da atividade
   - **Acceptance criteria:**
     - Cronômetro, distância, splits e etapa corrente continuam de onde pararam, reconstruídos do banco
     - O foreground service sobe novamente e a coleta é retomada
@@ -1055,7 +1055,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `retomada reconstrói distância e splits do banco`; `intervalo offline conta para elapsed e não para moving`; `nenhum activity_point é criado para o intervalo offline`
   - **Traces:** US-6.3, US-2.4
 
-- [ ] **Task:** Implementar a finalização com o que foi gravado
+- [x] **Task:** Implementar a finalização com o que foi gravado
   - **Acceptance criteria:**
     - As métricas existentes são consolidadas e `finished_at` é gravado
     - Em treino estruturado, as etapas não executadas passam a `not_performed`
@@ -1072,7 +1072,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 12.1: Tela de resultado
 
-- [ ] **Task:** Implementar o layout e os destaques da tela 08
+- [x] **Task:** Implementar o layout e os destaques da tela 08
   - **Acceptance criteria:**
     - Título `Atividade concluída` e subtítulo `<origem> · 30 ago, 07:42`, onde a origem é o nome do treino ou `Corrida livre`, e a data vem de `started_at` formatada em pt-BR
     - Destaques `DISTÂNCIA` e `TEMPO TOTAL` com a hierarquia do design ref
@@ -1081,7 +1081,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/08-activity-result.png
   - **Traces:** US-7.1, US-7.3
 
-- [ ] **Task:** Implementar a grade de métricas do resultado
+- [x] **Task:** Implementar a grade de métricas do resultado
   - **Acceptance criteria:**
     - `PACE MÉDIO`, `MELHOR KM`, `TEMPO CORRENDO` e `TEMPO CAMINHANDO` exibidos com os formatadores da fase 4
     - `MELHOR KM` vem de `best_pace_seconds_per_km`
@@ -1091,7 +1091,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/08-activity-result.png
   - **Traces:** US-7.1
 
-- [ ] **Task:** Implementar a seção `SPLITS`
+- [x] **Task:** Implementar a seção `SPLITS`
   - **Acceptance criteria:**
     - Uma linha por split com `KM n` e a duração, mais barra proporcional
     - O melhor split é destacado em ouro
@@ -1099,16 +1099,17 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/08-activity-result.png
   - **Traces:** US-2.5, US-7.1
 
-- [ ] **Task:** Implementar a seção `ETAPAS EXECUTADAS`
+- [x] **Task:** Implementar a seção `ETAPAS EXECUTADAS`
   - **Acceptance criteria:**
-    - Cabeçalho com a contagem total (`ETAPAS EXECUTADAS · 14`) e a ação `Ver todas`
+    - Cabeçalho com a contagem total (`ETAPAS EXECUTADAS · 14`)
+    - A lista vem truncada nas primeiras etapas; a ação `Ver todas` aparece **apenas quando há mais do que o truncamento exibe** e alterna para `Ver menos`. Com poucas etapas, todas já estão visíveis e a ação seria inerte
     - Uma linha por etapa com status `Concluída` (sálvia), `Pulada` (ouro, com duração real sobre planejada, ex. `01:12/02:00`) e `Não realizada` (cinza, esmaecida)
     - A seção é omitida por completo em corrida livre, e os splits ganham linhas cheias
     - Os dados vêm de `activity_steps`; a tela não recalcula status
   - **Design ref:** .spec/init/design/08-activity-result.md (Estados)
   - **Traces:** US-7.1, US-4.3, US-4.4
 
-- [ ] **Task:** Implementar os estados degradados do resultado
+- [x] **Task:** Implementar os estados degradados do resultado
   - **Acceptance criteria:**
     - Sem pontos válidos: aviso `SEM PERCURSO PARA EXIBIR` com o texto do design ref, distância `0,00 km`, `PACE MÉDIO` e `MELHOR KM` em `—` e splits com `Nenhum quilômetro completo.`
     - Menos de 1 km percorrido: seção de splits com `Nenhum quilômetro completo.` e a distância parcial preservada
@@ -1118,7 +1119,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 12.2: Captura de RPE
 
-- [ ] **Task:** Implementar a tela 09 de captura de RPE
+- [x] **Task:** Implementar a tela 09 de captura de RPE
   - **Acceptance criteria:**
     - Título `Como foi o treino?` e o texto sobre opcionalidade, exatos do design ref
     - Grade com os dez valores inteiros de 1 a 10, alvos de ~84 dp de altura
@@ -1129,7 +1130,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/09-rpe-capture.png
   - **Traces:** US-7.3
 
-- [ ] **Task:** Implementar as ações de salvamento da avaliação
+- [x] **Task:** Implementar as ações de salvamento da avaliação
   - **Acceptance criteria:**
     - Sem seleção: `Salvar avaliação` desabilitada e `Salvar sem avaliar` como ação primária
     - Com RPE selecionado: `Salvar avaliação` passa a primária e `Salvar sem avaliar` fica em contorno
@@ -1139,7 +1140,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/09-rpe-capture.md (Estados)
   - **Traces:** US-7.3, US-8.1
 
-- [ ] **Task:** Implementar a validação e a persistência do RPE
+- [x] **Task:** Implementar a validação e a persistência do RPE
   - **Acceptance criteria:**
     - `rpe` é inteiro de 1 a 10, validado na aplicação; o banco aceita nulo
     - A tela faz `UPDATE` na atividade existente, nunca `INSERT` — a atividade existe desde o início
@@ -1150,7 +1151,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 12.3: Descarte da atividade
 
-- [ ] **Task:** Implementar o diálogo de descarte (tela 10)
+- [x] **Task:** Implementar o diálogo de descarte (tela 10)
   - **Acceptance criteria:**
     - Modal sobre a tela 08 com véu escuro, título `Descartar esta atividade?` e o texto exato do design ref
     - Resumo do que será perdido: distância, tempo e contagem de splits; sem splits, a contagem é omitida
@@ -1159,7 +1160,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/10-activity-discard.png
   - **Traces:** US-7.4
 
-- [ ] **Task:** Implementar a execução do descarte
+- [x] **Task:** Implementar a execução do descarte
   - **Acceptance criteria:**
     - Confirmar apaga a `activity`, seus `activity_points`, `activity_splits` e `activity_steps` em transação única
     - É hard delete — nenhuma linha resta referenciando a atividade

@@ -38,7 +38,8 @@ export class ActivitiesRepository {
   }
   async atualizarAvaliacao(id: number, rpe: number | null, notes: string | null, at = new Date()): Promise<void> {
     if (rpe !== null && (!Number.isInteger(rpe) || rpe < 1 || rpe > 10)) throw new Error('RPE deve estar entre 1 e 10');
-    await this.database.run('UPDATE activities SET rpe=?,notes=?,updated_at=? WHERE id=?', [rpe, notes, now(at), id]);
+    const result = await this.database.run('UPDATE activities SET rpe=?,notes=?,updated_at=? WHERE id=?', [rpe, notes, now(at), id]);
+    if (!result.changes) throw new Error(`Atividade não encontrada: ${id}`);
   }
   async excluir(id: number): Promise<void> { await withTransaction(this.database, tx => tx.run('DELETE FROM activities WHERE id=?', [id]).then(() => undefined)); }
 }

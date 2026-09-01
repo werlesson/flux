@@ -19,9 +19,11 @@ export function ActivitySplits({ splits }: { splits: readonly ActivitySplit[] })
   const theme = useTheme();
   const presented = presentActivitySplits(splits);
   if (!presented.length) return <Text style={[styles.empty, { color: theme.colors.textSecondary }]}>Nenhum quilômetro completo.</Text>;
+  const longest = Math.max(...presented.map(split => split.duration_seconds));
   return <View>{presented.map(split => <View key={split.id} style={[styles.row, { borderBottomColor: theme.colors.border }]}>
+    <View style={[styles.bar, { backgroundColor: split.isBest ? theme.colors.highlight : theme.colors.border, width: `${Math.max(12, (split.duration_seconds / longest) * 100)}%` }]} />
     <Text style={[styles.kilometer, { color: split.isBest ? theme.colors.highlight : theme.colors.text }]}>KM {split.kilometer}</Text>
-    <Text style={[styles.pace, { color: split.isBest ? theme.colors.highlight : theme.colors.text }]}>{formatDuration(split.pace_seconds_per_km)}</Text>
+    <Text style={[styles.pace, { color: split.isBest ? theme.colors.highlight : theme.colors.text }]}>{formatDuration(split.duration_seconds)}</Text>
   </View>)}</View>;
 }
 
@@ -39,7 +41,8 @@ export function PersistedActivitySplits({ activityId }: { activityId: number | n
 
 const styles = StyleSheet.create({
   empty: { fontFamily: fonts.title.regular, paddingVertical: spacing.lg },
-  row: { alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.md },
+  row: { alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', overflow: 'hidden', paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  bar: { bottom: 3, left: 0, opacity: 0.12, position: 'absolute', top: 3 },
   kilometer: { fontFamily: fonts.data.semibold, fontSize: 12 },
   pace: { ...tabularMetric, fontFamily: fonts.data.semibold, fontSize: 18 },
 });
