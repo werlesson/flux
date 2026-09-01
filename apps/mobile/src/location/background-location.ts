@@ -5,14 +5,26 @@ import { ActivityEngine } from '@/activity/engine';
 import { initializeDatabase } from '@/database';
 import type { GpsSample } from '@/gps/filter';
 import { GpsFilterOrchestrator } from '@/gps/orchestrator';
+import { colors } from '@/constants/theme';
 
 export const LOCATION_TASK_NAME = 'flux-background-location';
-export const locationUpdateOptions: Location.LocationTaskOptions = {
-  accuracy: Location.Accuracy.BestForNavigation,
-  timeInterval: 1_000,
-  distanceInterval: 1,
-  foregroundService: { notificationTitle: 'Flux está acompanhando sua corrida', notificationBody: 'Toque para voltar à atividade.' },
-};
+export const BACKGROUND_LOCATION_WARNING = 'Sem acesso à localização em segundo plano, a gravação pode parar quando a tela apagar.';
+
+export function createLocationUpdateOptions(trainingName?: string | null): Location.LocationTaskOptions {
+  return {
+    accuracy: Location.Accuracy.BestForNavigation,
+    timeInterval: 1_000,
+    distanceInterval: 1,
+    foregroundService: {
+      notificationTitle: 'Flux · Atividade em andamento',
+      notificationBody: trainingName?.trim() || 'Corrida livre',
+      notificationColor: colors.dark.action,
+      killServiceOnDestroy: false,
+    },
+  };
+}
+
+export const locationUpdateOptions = createLocationUpdateOptions();
 
 type BackgroundGpsConsumer = (sample: GpsSample) => void | Promise<void>;
 
@@ -63,9 +75,9 @@ TaskManager.defineTask<{ locations: Location.LocationObject[] }>(LOCATION_TASK_N
   if (gpsConsumer === persistentBackgroundConsumer) await (await getHeadlessEngine()).onBackground();
 });
 
-export async function startLocationTracking(foregroundGranted: boolean): Promise<void> {
+export async function startLocationTracking(foregroundGranted: boolean, trainingName?: string | null): Promise<void> {
   if (!foregroundGranted) throw new Error('Permissão de localização em primeiro plano é obrigatória');
-  await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, locationUpdateOptions);
+  await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, createLocationUpdateOptions(trainingName));
 }
 
 export async function stopLocationTracking(): Promise<void> {

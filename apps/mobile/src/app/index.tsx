@@ -46,7 +46,7 @@ export default function HomeScreen() {
     if (starting) return;
     setStarting(true);
     const permissions = await new LocationPermissions().checkAndRequest();
-    if (permissions.foreground !== 'concedida' || permissions.background !== 'concedida') {
+    if (permissions.foreground !== 'concedida') {
       setStarting(false);
       router.push({ pathname: routes.activityBlocked, params: { foreground: permissions.foreground, background: permissions.background } });
       return;

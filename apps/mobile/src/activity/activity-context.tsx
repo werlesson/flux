@@ -5,7 +5,8 @@ import { getLocalUserId, initializeDatabase } from '@/database';
 import type { ActivityStatusSlug } from '@/database/types';
 import type { GpsSample } from '@/gps/filter';
 import type { SignalQuality } from '@/gps/signal-quality';
-import { setBackgroundGpsConsumer, startLocationTracking, stopLocationTracking } from '@/location/background-location';
+import { BACKGROUND_LOCATION_WARNING, setBackgroundGpsConsumer, startLocationTracking, stopLocationTracking } from '@/location/background-location';
+import { LocationPermissions } from '@/location/permissions';
 
 import { ActivityEngine, type ActivityMetricsSnapshot } from './engine';
 
@@ -14,10 +15,12 @@ interface ActivityContextValue extends ActivityMetricsSnapshot {
   signalQuality: SignalQuality;
   activityId: number | null;
   startFreeRun(): Promise<void>;
+  startStructuredRun(trainingSessionId: number, trainingName: string): Promise<void>;
   ingest(sample: GpsSample): Promise<void>;
   pause(): Promise<void>;
   resume(): Promise<void>;
   finish(): Promise<void>;
+  discard(): Promise<void>;
 }
 
 const emptyMetrics: ActivityMetricsSnapshot = { elapsed: 0, moving: 0, distance: 0, currentPace: null, averagePace: null };
@@ -66,13 +69,34 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     signalQuality: engine?.signalQuality ?? 'sem_sinal',
     activityId: engine?.id ?? null,
     startFreeRun: () => action(async item => {
+      const permissions = await new LocationPermissions().checkAndRequest();
+      if (permissions.foreground !== 'concedida') throw new Error('Permissão de localização em primeiro plano é obrigatória');
+      if (permissions.background !== 'concedida') Alert.alert('Gravação em segundo plano indisponível', BACKGROUND_LOCATION_WARNING);
       await item.startFreeRun(getLocalUserId());
-      await startLocationTracking(true);
+      try {
+        await startLocationTracking(true);
+      } catch (error) {
+        await item.discard();
+        throw error;
+      }
+    }),
+    startStructuredRun: (trainingSessionId, trainingName) => action(async item => {
+      const permissions = await new LocationPermissions().checkAndRequest();
+      if (permissions.foreground !== 'concedida') throw new Error('Permissão de localização em primeiro plano é obrigatória');
+      if (permissions.background !== 'concedida') Alert.alert('Gravação em segundo plano indisponível', BACKGROUND_LOCATION_WARNING);
+      await item.startStructuredRun(getLocalUserId(), trainingSessionId, trainingName);
+      try {
+        await startLocationTracking(true, trainingName);
+      } catch (error) {
+        await item.discard();
+        throw error;
+      }
     }),
     ingest: sample => action(item => item.ingest(sample)),
     pause: () => action(item => item.pause()),
     resume: () => action(item => item.resume()),
     finish: () => action(async item => { await item.finish(); await stopLocationTracking(); }),
+    discard: () => action(async item => { await item.discard(); await stopLocationTracking(); }),
   };
 
   return <ActivityContext.Provider value={value}>{children}</ActivityContext.Provider>;

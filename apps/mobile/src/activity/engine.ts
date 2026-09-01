@@ -75,6 +75,24 @@ export class ActivityEngine {
     }
   }
 
+  async startStructuredRun(userId: number, trainingSessionId: number, trainingName: string, startedAt = new Date(this.clock.now())): Promise<Activity> {
+    if (this.activity) throw new Error('Já existe uma atividade neste motor');
+    try {
+      const created = await this.activities.criar({
+        user_id: userId,
+        activity_type_slug: 'structured',
+        training_session_id: trainingSessionId,
+        training_session_name: trainingName,
+        started_at: startedAt,
+      });
+      this.activity = created; this.statusValue = 'in_progress'; this.lastCheckpointAt = startedAt.getTime(); this.lastPointFlushAt = startedAt.getTime();
+      return created;
+    } catch (error) {
+      this.onStartError?.('Não foi possível iniciar a atividade. Tente novamente.');
+      throw error;
+    }
+  }
+
   async restoreLastActivity(): Promise<Activity | null> {
     if (this.activity) throw new Error('JÃ¡ existe uma atividade neste motor');
     const activity = await this.activities.buscarEmAndamento();
@@ -164,6 +182,15 @@ export class ActivityEngine {
     });
     this.statusValue = 'finished';
     return (await this.activities.buscarPorId(this.activity.id))!;
+  }
+
+  async discard(): Promise<void> {
+    if (!this.activity) return;
+    await this.flush();
+    await this.activities.excluir(this.activity.id);
+    this.activity = null;
+    this.statusValue = null;
+    this.pending = [];
   }
 
   private requireTransition(next: ActivityStatusSlug): void {
