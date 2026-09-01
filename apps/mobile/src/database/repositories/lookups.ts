@@ -56,6 +56,13 @@ export class LookupRepository {
     if (!record) throw new Error(`Lookup desconhecido: ${table}#${id}`);
     return record;
   }
+
+  async tiposDeEtapaAtivos(): Promise<StepType[]> {
+    await this.carregar();
+    return [...(this.cache.byId.get('step_types')?.values() ?? [])]
+      .filter((record): record is StepType => record.is_active)
+      .sort((a, b) => a.id - b.id);
+  }
 }
 
 export const LookupsRepository = LookupRepository;
