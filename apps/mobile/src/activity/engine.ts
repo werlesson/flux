@@ -2,7 +2,8 @@ import type { DatabaseAdapter } from '@/database/adapter';
 import { ActivitiesRepository } from '@/database/repositories/activities';
 import { type ActivityPointInput,ActivityPointsRepository } from '@/database/repositories/activity-points';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
-import type { Activity, ActivityStatusSlug } from '@/database/types';
+import { ActivityStepsRepository } from '@/database/repositories/activity-steps';
+import type { Activity, ActivityStatusSlug, ActivityTypeSlug } from '@/database/types';
 import type { GpsSample } from '@/gps/filter';
 import { haversineDistanceMeters } from '@/gps/distance';
 import { GpsFilterOrchestrator } from '@/gps/orchestrator';
@@ -13,6 +14,7 @@ import { type ActivityClock,elapsedSeconds, paceSecondsPerKm, systemActivityCloc
 import { KilometerSplitDetector } from './split-detector';
 
 export interface ActivityMetricsSnapshot { elapsed: number; moving: number; distance: number; currentPace: number | null; averagePace: number | null }
+export interface ActivityRecoverySnapshot extends ActivityMetricsSnapshot { activityId: number; activityType: ActivityTypeSlug; trainingName: string | null; startedAt: Date; currentStep: { name: string; position: number; total: number } | null }
 export interface ActivityEngineOptions { pointBatchSize?: number; pointBatchFlushIntervalSeconds?: number; persistenceIntervalSeconds?: number; paceWindowSeconds?: number; clock?: ActivityClock; onStartError?: (message: string) => void }
 type ValidSample = { at: number; distance: number };
 
@@ -33,11 +35,13 @@ export class ActivityEngine {
   private lastPointFlushAt = 0;
   private segmentIndex = 0;
   private splitDetector = new KilometerSplitDetector();
+  private currentStepValue: ActivityRecoverySnapshot['currentStep'] = null;
   private writeChain: Promise<void> = Promise.resolve();
   private pendingWriteError: unknown = null;
   private readonly activities: ActivitiesRepository;
   private readonly points: ActivityPointsRepository;
   private readonly splits: ActivitySplitsRepository;
+  private readonly steps: ActivityStepsRepository;
   private readonly orchestrator: GpsFilterOrchestrator;
   private readonly clock: ActivityClock;
   private readonly batchSize: number;
@@ -50,6 +54,7 @@ export class ActivityEngine {
     this.activities = new ActivitiesRepository(database);
     this.points = new ActivityPointsRepository(database);
     this.splits = new ActivitySplitsRepository(database);
+    this.steps = new ActivityStepsRepository(database);
     this.clock = options.clock ?? systemActivityClock;
     this.batchSize = options.pointBatchSize ?? activityPointBatchSize;
     this.batchFlushSeconds = options.pointBatchFlushIntervalSeconds ?? activityPointBatchFlushIntervalSeconds;
@@ -62,10 +67,13 @@ export class ActivityEngine {
   get id(): number | null { return this.activity?.id ?? null; }
   get status(): ActivityStatusSlug | null { return this.statusValue; }
   get signalQuality(): SignalQuality { return evaluateSignalTimeout(this.signal, this.clock.now()).quality; }
+  get currentStep(): ActivityRecoverySnapshot['currentStep'] { return this.currentStepValue; }
 
   async startFreeRun(userId: number, startedAt = new Date(this.clock.now())): Promise<Activity> {
-    if (this.activity) throw new Error('JÃ¡ existe uma atividade neste motor');
+    this.releaseFinishedActivity();
+    if (this.activity) throw new Error('Já existe uma atividade neste motor');
     try {
+      if (await this.activities.buscarEmAndamento()) throw new Error('Existe uma atividade pendente de resolução');
       const created = await this.activities.criar({ user_id: userId, activity_type_slug: 'free_run', started_at: startedAt });
       this.activity = created; this.statusValue = 'in_progress'; this.lastCheckpointAt = startedAt.getTime(); this.lastPointFlushAt = startedAt.getTime();
       return created;
@@ -76,8 +84,10 @@ export class ActivityEngine {
   }
 
   async startStructuredRun(userId: number, trainingSessionId: number, trainingName: string, startedAt = new Date(this.clock.now())): Promise<Activity> {
+    this.releaseFinishedActivity();
     if (this.activity) throw new Error('Já existe uma atividade neste motor');
     try {
+      if (await this.activities.buscarEmAndamento()) throw new Error('Existe uma atividade pendente de resolução');
       const created = await this.activities.criar({
         user_id: userId,
         activity_type_slug: 'structured',
@@ -85,6 +95,18 @@ export class ActivityEngine {
         training_session_name: trainingName,
         started_at: startedAt,
       });
+      const source = await this.database.all<{ id: number; block_id: number; step_type_id: number; duration_seconds: number; instructions: string | null; repeat_count: number }>(
+        'SELECT s.id,b.id block_id,s.step_type_id,s.duration_seconds,s.instructions,b.repeat_count FROM training_blocks b JOIN training_steps s ON s.training_block_id=b.id WHERE b.training_session_id=? ORDER BY b.position,s.position',
+        [trainingSessionId],
+      );
+      const snapshots = [];
+      for (const blockId of [...new Set(source.map(step => step.block_id))]) {
+        const blockSteps = source.filter(step => step.block_id === blockId);
+        for (let repetition = 1; repetition <= blockSteps[0]!.repeat_count; repetition += 1) for (const step of blockSteps) snapshots.push({ training_step_id: step.id, step_type_id: step.step_type_id, planned_duration_seconds: step.duration_seconds, instructions: step.instructions, position: snapshots.length, repetition_index: repetition });
+      }
+      await this.steps.criarSnapshot(created.id, snapshots, startedAt);
+      await this.steps.iniciarPrimeiraPendente(created.id, startedAt);
+      this.currentStepValue = await this.loadCurrentStep(created.id);
       this.activity = created; this.statusValue = 'in_progress'; this.lastCheckpointAt = startedAt.getTime(); this.lastPointFlushAt = startedAt.getTime();
       return created;
     } catch (error) {
@@ -94,7 +116,7 @@ export class ActivityEngine {
   }
 
   async restoreLastActivity(): Promise<Activity | null> {
-    if (this.activity) throw new Error('JÃ¡ existe uma atividade neste motor');
+    if (this.activity) throw new Error('Já existe uma atividade neste motor');
     const activity = await this.activities.buscarEmAndamento();
     if (!activity) return null;
     const [status] = await this.database.all<{ slug: ActivityStatusSlug }>('SELECT s.slug FROM activity_statuses s JOIN activities a ON a.activity_status_id=s.id WHERE a.id=?', [activity.id]);
@@ -116,6 +138,7 @@ export class ActivityEngine {
     const persistedSplits = await this.splits.listar(activity.id);
     this.splitDetector = new KilometerSplitDetector(persistedSplits.at(-1)?.kilometer ?? 0, persistedSplits.reduce((total, split) => total + split.duration_seconds, 0));
     await this.restoreFilterState(activity.id);
+    this.currentStepValue = await this.loadCurrentStep(activity.id);
     return activity;
   }
 
@@ -135,7 +158,7 @@ export class ActivityEngine {
     this.requireTransition('in_progress');
     await this.database.transaction(async tx => {
       const result = await tx.run('UPDATE activity_pause_intervals SET finished_at=? WHERE id=(SELECT id FROM activity_pause_intervals WHERE activity_id=? AND finished_at IS NULL ORDER BY started_at DESC LIMIT 1)', [at.toISOString(), this.activity!.id]);
-      if (!result.changes) throw new Error('Intervalo de pausa aberto nÃ£o encontrado');
+      if (!result.changes) throw new Error('Intervalo de pausa aberto não encontrado');
       await new ActivitiesRepository(tx).atualizarStatus(this.activity!.id, 'in_progress', at);
     });
     if (this.pausedAt !== null) this.accumulatedPausedMilliseconds += Math.max(0, at.getTime() - this.pausedAt);
@@ -172,16 +195,24 @@ export class ActivityEngine {
   }
 
   async finish(at = new Date(this.clock.now())): Promise<Activity> {
-    if (!this.activity || this.statusValue === 'finished') throw new InvalidActivityTransitionError('Atividade finalizada Ã© terminal');
+    if (!this.activity || this.statusValue === 'finished') throw new InvalidActivityTransitionError('Atividade finalizada é terminal');
     await this.flush();
     const snapshot = this.metrics(at.getTime());
     await this.database.transaction(async tx => {
       const best = await new ActivitySplitsRepository(tx).melhorPace(this.activity!.id);
       await new ActivitiesRepository(tx).atualizarMetricas(this.activity!.id, { finished_at: at, activity_status_slug: 'finished', elapsed_duration_seconds: snapshot.elapsed, moving_duration_seconds: snapshot.moving, distance_meters: snapshot.distance, average_pace_seconds_per_km: snapshot.averagePace, best_pace_seconds_per_km: best }, at);
+      await new ActivityStepsRepository(tx).finalizarPendentes(this.activity!.id, at);
       await tx.run('UPDATE activity_pause_intervals SET finished_at=? WHERE activity_id=? AND finished_at IS NULL', [at.toISOString(), this.activity!.id]);
     });
     this.statusValue = 'finished';
     return (await this.activities.buscarPorId(this.activity.id))!;
+  }
+
+  async recoverySnapshot(now = this.clock.now()): Promise<ActivityRecoverySnapshot | null> {
+    if (!this.activity) return null;
+    const [type] = await this.database.all<{ slug: ActivityTypeSlug }>('SELECT t.slug FROM activity_types t JOIN activities a ON a.activity_type_id=t.id WHERE a.id=?', [this.activity.id]);
+    this.currentStepValue = await this.loadCurrentStep(this.activity.id);
+    return { activityId: this.activity.id, activityType: type?.slug ?? 'free_run', trainingName: this.activity.training_session_name, startedAt: this.activity.started_at, currentStep: this.currentStepValue, ...this.metrics(now) };
   }
 
   async discard(): Promise<void> {
@@ -194,9 +225,28 @@ export class ActivityEngine {
   }
 
   private requireTransition(next: ActivityStatusSlug): void {
-    if (!this.activity) throw new InvalidActivityTransitionError('Atividade nÃ£o iniciada');
+    if (!this.activity) throw new InvalidActivityTransitionError('Atividade não iniciada');
     const valid = (this.statusValue === 'in_progress' && next === 'paused') || (this.statusValue === 'paused' && next === 'in_progress');
-    if (!valid) throw new InvalidActivityTransitionError(`TransiÃ§Ã£o invÃ¡lida: ${this.statusValue} -> ${next}`);
+    if (!valid) throw new InvalidActivityTransitionError(`Transição inválida: ${this.statusValue} -> ${next}`);
+  }
+
+  private releaseFinishedActivity(): void {
+    if (this.statusValue !== 'finished') return;
+    this.activity = null; this.statusValue = null; this.pending = []; this.movingSeconds = 0;
+    this.accumulatedPausedMilliseconds = 0; this.pausedAt = null; this.distanceMeters = 0;
+    this.lastAcceptedAt = null; this.recent = []; this.signal = createSignalQualityState(); this.segmentIndex = 0;
+    this.splitDetector = new KilometerSplitDetector();
+    this.currentStepValue = null;
+  }
+
+  private async loadCurrentStep(activityId: number): Promise<ActivityRecoverySnapshot['currentStep']> {
+    const [current] = await this.database.all<{ name: string; position: number; total: number }>(
+      `SELECT t.name,s.position,(SELECT COUNT(*) FROM activity_steps WHERE activity_id=s.activity_id) total
+       FROM activity_steps s JOIN step_types t ON t.id=s.step_type_id
+       WHERE s.activity_id=? AND s.finished_at IS NULL ORDER BY s.position LIMIT 1`,
+      [activityId],
+    );
+    return current ? { ...current, position: current.position + 1 } : null;
   }
 
   /**

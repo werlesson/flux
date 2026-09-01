@@ -42,7 +42,7 @@ export default function HomeScreen() {
   }, [activity, router, starting]);
 
   const beginFreeRun = async () => {
-    if (activity.activityId !== null) { Alert.alert('Atividade em andamento', 'Resolva ou retome a atividade atual antes de iniciar outra.'); return; }
+    if (activity.status === 'in_progress' || activity.status === 'paused' || activity.pendingRecovery !== null) { Alert.alert('Atividade em andamento', 'Resolva ou retome a atividade atual antes de iniciar outra.'); return; }
     if (starting) return;
     setStarting(true);
     const permissions = await new LocationPermissions().checkAndRequest();
@@ -74,7 +74,7 @@ export default function HomeScreen() {
         <Text style={[styles.description, { color: theme.colors.text, fontFamily: theme.fonts.title.regular }]}>Grava tempo, distância, pace e percurso sem seguir um treino.</Text>
         <Button disabled={starting} onPress={() => void beginFreeRun()}>Iniciar corrida livre</Button>
       </Card>
-      {activity.activityId !== null ? <Card onPress={() => router.push(routes.activity)} style={styles.activeCard}><Text style={[styles.linkLabel, { color: theme.colors.text }]}>Atividade em andamento</Text><Text style={[styles.linkSummary, { color: theme.colors.textSecondary }]}>Voltar para a corrida ›</Text></Card> : null}
+      {activity.status === 'in_progress' || activity.status === 'paused' ? <Card onPress={() => router.push(routes.activity)} style={styles.activeCard}><Text style={[styles.linkLabel, { color: theme.colors.text }]}>Atividade em andamento</Text><Text style={[styles.linkSummary, { color: theme.colors.textSecondary }]}>Voltar para a corrida ›</Text></Card> : null}
       <View style={styles.links}>
         <HomeLink label="Biblioteca de treinos" onPress={() => router.push(routes.trainingLibrary)} summary={formatTrainingCount(summary.trainingCount)} />
         <HomeLink label="Histórico" onPress={() => router.push(routes.history)} summary={summary.latestActivity ?? 'Nenhuma atividade'} />

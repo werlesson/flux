@@ -19,6 +19,19 @@ export class ActivityStepsRepository {
     await this.database.run('UPDATE activity_steps SET actual_duration_seconds=?,distance_meters=?,finished_at=?,step_execution_status_id=?,updated_at=? WHERE id=?', [actualDurationSeconds, distanceMeters, now(finishedAt), statusId, now(at), id]);
   }
   async listar(activityId: number): Promise<ActivityStep[]> { return (await this.database.all<Record<string, unknown>>('SELECT * FROM activity_steps WHERE activity_id=? ORDER BY position', [activityId])).map(row => dates(row) as unknown as ActivityStep); }
+  async iniciarPrimeiraPendente(activityId: number, at = new Date()): Promise<void> {
+    await this.database.run(
+      'UPDATE activity_steps SET started_at=?,updated_at=? WHERE id=(SELECT id FROM activity_steps WHERE activity_id=? AND finished_at IS NULL ORDER BY position LIMIT 1) AND started_at IS NULL',
+      [now(at), now(at), activityId],
+    );
+  }
+  async finalizarPendentes(activityId: number, at = new Date()): Promise<void> {
+    const statusId = await this.lookups.idPorSlug('step_execution_statuses', 'not_performed');
+    await this.database.run(
+      'UPDATE activity_steps SET step_execution_status_id=?,updated_at=? WHERE activity_id=? AND finished_at IS NULL',
+      [statusId, now(at), activityId],
+    );
+  }
   async contarPorStatus(activityId: number): Promise<Record<StepExecutionStatusSlug, number>> {
     const result: Record<StepExecutionStatusSlug, number> = { completed: 0, skipped: 0, not_performed: 0 };
     const rows = await this.database.all<{ slug: StepExecutionStatusSlug; count: number }>('SELECT s.slug,COUNT(*) count FROM activity_steps a JOIN step_execution_statuses s ON s.id=a.step_execution_status_id WHERE a.activity_id=? GROUP BY s.id,s.slug', [activityId]);

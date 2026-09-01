@@ -34,7 +34,7 @@ export class ActivitiesRepository {
   async atualizarStatus(id: number, status: ActivityStatusSlug, at = new Date()): Promise<void> {
     const statusId = await this.lookups.idPorSlug('activity_statuses', status);
     const result = await this.database.run('UPDATE activities SET activity_status_id=?,updated_at=? WHERE id=? AND finished_at IS NULL', [statusId, now(at), id]);
-    if (!result.changes) throw new Error('Atividade finalizada nÃ£o permite transiÃ§Ã£o');
+    if (!result.changes) throw new Error('Atividade finalizada não permite transição');
   }
   async atualizarAvaliacao(id: number, rpe: number | null, notes: string | null, at = new Date()): Promise<void> {
     if (rpe !== null && (!Number.isInteger(rpe) || rpe < 1 || rpe > 10)) throw new Error('RPE deve estar entre 1 e 10');

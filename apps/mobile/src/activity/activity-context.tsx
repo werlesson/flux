@@ -8,12 +8,14 @@ import type { SignalQuality } from '@/gps/signal-quality';
 import { BACKGROUND_LOCATION_WARNING, setBackgroundGpsConsumer, startLocationTracking, stopLocationTracking } from '@/location/background-location';
 import { LocationPermissions } from '@/location/permissions';
 
-import { ActivityEngine, type ActivityMetricsSnapshot } from './engine';
+import { ActivityEngine, type ActivityMetricsSnapshot, type ActivityRecoverySnapshot } from './engine';
 
 interface ActivityContextValue extends ActivityMetricsSnapshot {
   status: ActivityStatusSlug | null;
   signalQuality: SignalQuality;
   activityId: number | null;
+  pendingRecovery: ActivityRecoverySnapshot | null;
+  currentStep: ActivityRecoverySnapshot['currentStep'];
   startFreeRun(): Promise<void>;
   startStructuredRun(trainingSessionId: number, trainingName: string): Promise<void>;
   ingest(sample: GpsSample): Promise<void>;
@@ -21,6 +23,8 @@ interface ActivityContextValue extends ActivityMetricsSnapshot {
   resume(): Promise<void>;
   finish(): Promise<void>;
   discard(): Promise<void>;
+  resumeInterrupted(): Promise<void>;
+  finishInterrupted(): Promise<void>;
 }
 
 const emptyMetrics: ActivityMetricsSnapshot = { elapsed: 0, moving: 0, distance: 0, currentPace: null, averagePace: null };
@@ -28,6 +32,7 @@ const ActivityContext = createContext<ActivityContextValue | null>(null);
 
 export function ActivityProvider({ children }: PropsWithChildren) {
   const [engine, setEngine] = useState<ActivityEngine | null>(null);
+  const [pendingRecovery, setPendingRecovery] = useState<ActivityRecoverySnapshot | null>(null);
   const [, render] = useState(0);
   const refresh = useCallback(() => render(value => value + 1), []);
 
@@ -39,6 +44,7 @@ export function ActivityProvider({ children }: PropsWithChildren) {
       });
       await restoredEngine.restoreLastActivity();
       if (!mounted) return;
+      setPendingRecovery(await restoredEngine.recoverySnapshot());
       setBackgroundGpsConsumer(sample => restoredEngine.ingest(sample));
       setEngine(restoredEngine);
     });
@@ -68,6 +74,8 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     status: engine?.status ?? null,
     signalQuality: engine?.signalQuality ?? 'sem_sinal',
     activityId: engine?.id ?? null,
+    pendingRecovery,
+    currentStep: engine?.currentStep ?? null,
     startFreeRun: () => action(async item => {
       const permissions = await new LocationPermissions().checkAndRequest();
       if (permissions.foreground !== 'concedida') throw new Error('Permissão de localização em primeiro plano é obrigatória');
@@ -97,8 +105,23 @@ export function ActivityProvider({ children }: PropsWithChildren) {
     resume: () => action(item => item.resume()),
     finish: () => action(async item => { await item.finish(); await stopLocationTracking(); }),
     discard: () => action(async item => { await item.discard(); await stopLocationTracking(); }),
+    resumeInterrupted: () => action(async item => {
+      if (!pendingRecovery) return;
+      if (item.status === 'paused') await item.resume();
+      await startLocationTracking(true, pendingRecovery.trainingName);
+      setPendingRecovery(null);
+      refresh();
+    }),
+    finishInterrupted: () => action(async item => {
+      if (!pendingRecovery) return;
+      await item.finish();
+      await stopLocationTracking();
+      setPendingRecovery(null);
+      refresh();
+    }),
   };
 
+  if (!engine) return null;
   return <ActivityContext.Provider value={value}>{children}</ActivityContext.Provider>;
 }
 
