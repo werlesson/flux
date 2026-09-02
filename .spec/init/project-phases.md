@@ -40,7 +40,9 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - `name`, `slug` e `scheme` passam de `mobile` para `flux`; `android.package` definido
     - `orientation: "portrait"` e `userInterfaceStyle: "automatic"`
     - Config plugin de `expo-location` declarado com `isAndroidBackgroundLocationEnabled: true` e `isAndroidForegroundServiceEnabled: true`
-    - `android.permissions` inclui `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE` e `FOREGROUND_SERVICE_LOCATION`
+    - `android.permissions` inclui `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` e `RECEIVE_BOOT_COMPLETED`
+    - `RECEIVE_BOOT_COMPLETED` não é opcional nem está na doc do Expo: o `expo-task-manager` agenda o job de localização como **persistido**, e o `JobScheduler` do Android recusa (`enforceValidJobRequest`) sem ela. Sem a permissão o app **crasha ao receber a primeira atualização de localização em background**, não no início
+    - O app é **Android-only**: `app.json` não declara bloco `web`, e não há script `web` nem `ios` — o `expo-sqlite` não resolve seu `.wasm` no bundle web e faria o dev server falhar a cada requisição
     - Nenhuma configuração de iOS é adicionada — o MVP é Android apenas
   - **Traces:** US-6.1, workflow 8 (project-description.md)
 
