@@ -10,7 +10,8 @@ import { formatTrainingCount, type HomeSummary,loadHomeSummary } from '@/home/ho
 import { useTheme } from '@/hooks/use-theme';
 import { acquireInitialFix, type InitialFixAttempt, type InitialFixState } from '@/location/initial-fix';
 import { LocationPermissions } from '@/location/permissions';
-import { routes } from '@/navigation/routes';
+import { developmentRoutes, routes } from '@/navigation/routes';
+import { isDevelopmentBuild } from '@/utils/environment';
 
 const EMPTY_SUMMARY: HomeSummary = { latestActivity: null, trainingCount: 0 };
 
@@ -86,6 +87,7 @@ export default function HomeScreen() {
       <View style={styles.links}>
         <HomeLink label="Biblioteca de treinos" onPress={() => router.push(routes.trainingLibrary)} summary={formatTrainingCount(summary.trainingCount)} />
         <HomeLink label="Histórico" onPress={() => router.push(routes.history)} summary={summary.latestActivity ?? 'Nenhuma atividade'} />
+        {isDevelopmentBuild() ? <HomeLink label="Inspeção do GPS" onPress={() => router.push(developmentRoutes.gpsInspector)} summary="Ferramenta de desenvolvimento" /> : null}
       </View>
       <BottomSheet visible={sheetVisible} onDismiss={dismissSheet} footer={<View style={styles.sheetActions}><Button variant="secondary" disabled={starting} onPress={() => void startActivity()}>Iniciar assim mesmo</Button><Button disabled={starting} onPress={waitForSignal}>{fix.status === 'boa_precisao' ? 'Iniciar' : 'Aguardar sinal'}</Button></View>}>
         <GpsStatusPill status={fix.status === 'boa_precisao' ? 'good' : 'unacceptable'} />

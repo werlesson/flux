@@ -56,5 +56,6 @@ export default function RootLayout() {
     <Stack.Screen name="rpe" options={{ gestureEnabled: false }} />
     <Stack.Screen name="history" />
     <Stack.Screen name="activity-detail" />
+    <Stack.Screen name="gps-inspector" />
   </Stack><ActivityRecoveryDialog /></ActivityProvider>;
 }
