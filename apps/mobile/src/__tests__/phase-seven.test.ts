@@ -17,8 +17,8 @@ async function setup(now = 0, options: ConstructorParameters<typeof ActivityEngi
 
 const sample = (seconds: number, longitude = 0, overrides = {}) => ({ latitude: 0, longitude, accuracy: 5, speed: 2, recordedAt: seconds * 1000, ...overrides });
 
-describe('nÃºcleo da atividade', () => {
-  it('cria a atividade antes do primeiro ponto e persiste cada transiÃ§Ã£o', async () => {
+describe('núcleo da atividade', () => {
+  it('cria a atividade antes do primeiro ponto e persiste cada transição', async () => {
     const { database, userId, engine } = await setup(); await engine.startFreeRun(userId);
     expect(await database.all('SELECT * FROM activity_points')).toHaveLength(0);
     await engine.pause();
@@ -26,7 +26,7 @@ describe('nÃºcleo da atividade', () => {
     await engine.resume(); expect(engine.status).toBe('in_progress'); database.close();
   });
 
-  it('rejeita retomada fora da pausa e finished Ã© terminal', async () => {
+  it('rejeita retomada fora da pausa e finished é terminal', async () => {
     const { userId, engine, database } = await setup(); await engine.startFreeRun(userId);
     await expect(engine.resume()).rejects.toBeInstanceOf(InvalidActivityTransitionError);
     await engine.finish(); await expect(engine.pause()).rejects.toBeInstanceOf(InvalidActivityTransitionError); database.close();
@@ -37,13 +37,13 @@ describe('nÃºcleo da atividade', () => {
     expect((await engine.finish()).finished_at).not.toBeNull(); database.close();
   });
 
-  it('elapsed deriva do relÃ³gio, ignora ticks e nunca Ã© negativo', async () => {
+  it('elapsed deriva do relógio, ignora ticks e nunca é negativo', async () => {
     const { userId, engine, time, database } = await setup(1_000); await engine.startFreeRun(userId, new Date(1_000));
     time.value += 30 * 60 * 1000; expect(engine.metrics().elapsed).toBe(1800); expect(engine.metrics().elapsed).toBe(1800);
     time.value = 0; expect(engine.metrics().elapsed).toBe(0); database.close();
   });
 
-  it('pausa congela o elapsed, nÃ£o incorpora GPS e sobrevive Ã restauraÃ§Ã£o', async () => {
+  it('pausa congela o elapsed, não incorpora GPS e sobrevive Ã restauração', async () => {
     const { userId, engine, time, database } = await setup(); await engine.startFreeRun(userId); await engine.ingest(sample(0)); await engine.ingest(sample(10, 0.00018));
     time.value = 10_000; await engine.pause(); await engine.ingest(sample(20, 0.00036)); time.value = 30_000;
     expect(engine.metrics()).toMatchObject({ elapsed: 10, moving: 10 });
@@ -51,20 +51,20 @@ describe('nÃºcleo da atividade', () => {
     expect(restored.status).toBe('paused'); expect(await database.all('SELECT * FROM activity_points')).toHaveLength(2); database.close();
   });
 
-  it('persiste rejeiÃ§Ãµes com motivo, nÃ£o soma distÃ¢ncia e descarrega lote na pausa', async () => {
+  it('persiste rejeições com motivo, não soma distância e descarrega lote na pausa', async () => {
     const { userId, engine, database } = await setup(0, { pointBatchSize: 100 }); await engine.startFreeRun(userId);
     await engine.ingest(sample(0)); await engine.ingest(sample(2, 1, { accuracy: 60 })); expect(await database.all('SELECT * FROM activity_points')).toHaveLength(0);
     await engine.pause(); const rows = await database.all<{ is_valid: number; slug: string | null }>('SELECT p.is_valid,r.slug FROM activity_points p LEFT JOIN gps_rejection_reasons r ON r.id=p.rejection_reason_id ORDER BY p.id');
     expect(rows).toEqual([{ is_valid: 1, slug: null }, { is_valid: 0, slug: 'low_accuracy' }]); expect(engine.metrics().distance).toBe(0); database.close();
   });
 
-  it('distÃ¢ncia e moving usam somente segmentos aceitos e nÃ£o mudam status', async () => {
+  it('distância e moving usam somente segmentos aceitos e não mudam status', async () => {
     const { userId, engine, time, database } = await setup(); await engine.startFreeRun(userId); await engine.ingest(sample(0)); await engine.ingest(sample(10, 0.00018)); time.value = 10_000;
     const moved = engine.metrics(); expect(moved.distance).toBeGreaterThan(19); expect(moved.moving).toBe(10);
     await engine.ingest(sample(20, 0.00018, { speed: 0 })); time.value = 20_000; expect(engine.metrics().moving).toBe(10); expect(engine.status).toBe('in_progress'); database.close();
   });
 
-  it('pace atual exige base, some em pausa e pace mÃ©dio usa moving', async () => {
+  it('pace atual exige base, some em pausa e pace médio usa moving', async () => {
     const { userId, engine, database } = await setup(); await engine.startFreeRun(userId); await engine.ingest(sample(0)); expect(engine.metrics(0).currentPace).toBeNull();
     await engine.ingest(sample(10, 0.00018)); expect(engine.metrics(10_000).averagePace).toBe(engine.metrics(10_000).currentPace);
     await engine.pause(new Date(10_000)); expect(engine.metrics(10_000).currentPace).toBeNull(); database.close();
