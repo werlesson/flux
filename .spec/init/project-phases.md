@@ -6,9 +6,9 @@
 
 O build do Flux é organizado em **21 fases**, sempre **fundação antes de fluxo**. As fases 1 a 5 constroem a base — dependências e build nativo, schema SQLite com migrações e seeds, repositórios com todos os relacionamentos resolvidos, e a fundação de UI (tokens de tema escuro e claro, tipografia, formatadores e componentes compartilhados). Só a partir da fase 6 começam os fluxos do produto, e eles vêm na ordem decidida com o desenvolvedor: **corrida livre primeiro** (filtro de GPS → núcleo da atividade → telas → splits → background → recuperação → resultado → histórico → mapa), e só depois o eixo de treinos (biblioteca → editor → motor → execução estruturada → orientações por áudio). Essa ordem coloca o componente apontado na descrição como o mais crítico do produto — o filtro de GPS — na primeira fase de fluxo, e entrega um app que grava corridas antes de o motor de treino existir.
 
-O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. A **fase 14 (mapa do percurso)** é deliberadamente isolada porque `expo-maps` está em alpha e a chave do Google Maps ainda não foi provisionada — é a única fase que pode ser cortada sem tocar nas demais, degradando as telas 08 e 12 para o estado "sem percurso para exibir" que os design refs já especificam. Os limiares do filtro de GPS entram com **defaults provisórios documentados em um módulo único**, com os testes escritos contra os limiares configurados e não contra números fixos; a **fase 20** é a calibração em campo que fixa os valores definitivos. Cada fase (pai + subfases) é dimensionada para uma sessão de agente e é referenciada por número quando entregue à implementação.
+O **corte do MVP é a fase 22**: todas as 22 fases compõem o primeiro release. A **fase 14 (mapa do percurso)** é deliberadamente isolada porque `expo-maps` está em alpha e a chave do Google Maps ainda não foi provisionada — é a única fase que pode ser cortada sem tocar nas demais, degradando as telas 08 e 12 para o estado "sem percurso para exibir" que os design refs já especificam. Os limiares do filtro de GPS entram com **defaults provisórios documentados em um módulo único**, com os testes escritos contra os limiares configurados e não contra números fixos; a **fase 21** é a calibração em campo que fixa os valores definitivos. Cada fase (pai + subfases) é dimensionada para uma sessão de agente e é referenciada por número quando entregue à implementação.
 
-**Execução automática × execução humana.** As fases 1 a 19 são implementáveis e verificáveis por sessão de agente: nenhum critério de aceite delas depende de hardware conectado ou de ação física. Toda validação que exige um aparelho Android — instalação do build, renderização do mapa, resistência à otimização de bateria, modo avião, sinal de GPS real — vive na **fase 21**, e a calibração em campo do filtro vive na **fase 20**. Num run automatizado a execução vai naturalmente até a fase 19 e para na 20: esse é o ponto de entrega do bastão para o desenvolvedor, não uma falha.
+**Execução automática × execução humana.** As fases 1 a 20 são implementáveis e verificáveis por sessão de agente: nenhum critério de aceite delas depende de hardware conectado ou de ação física. Toda validação que exige um aparelho Android — instalação do build, renderização do mapa, resistência à otimização de bateria, modo avião, sinal de GPS real — vive na **fase 22**, e a calibração em campo do filtro vive na **fase 21**. Num run automatizado a execução vai naturalmente até a fase 20 e para na 21: esse é o ponto de entrega do bastão para o desenvolvedor, não uma falha.
 
 **Conventions:**
 - `[ ]` pending · `[x]` done in the codebase.
@@ -32,7 +32,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - `pnpm install` completa sem conflito de peer dependencies
     - `npx tsc --noEmit` passa limpo com as novas dependências
     - `expo-maps` **não** é instalado aqui — pertence à fase 14, que é isolável
-    - A abertura do app em device é verificada na **fase 21**, não aqui — nenhum critério desta fase depende de hardware conectado
+    - A abertura do app em device é verificada na **fase 22**, não aqui — nenhum critério desta fase depende de hardware conectado
   - **Traces:** Tech Stack (project-description.md)
 
 - [x] **Task:** Configurar `app.json` com a identidade Flux e as permissões Android de localização
@@ -51,7 +51,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - `npx expo prebuild` completa sem erro e gera o diretório `android/`
     - O `AndroidManifest.xml` gerado declara o `android.package` configurado e as cinco permissões de localização (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`)
     - O `README.md` de `apps/mobile/` documenta o comando de build e registra explicitamente que **Expo Go não é suportado** (localização em background não funciona nele)
-    - A instalação e a abertura do build em device físico são verificadas na **fase 21**, não aqui
+    - A instalação e a abertura do build em device físico são verificadas na **fase 22**, não aqui
   - **Traces:** Development Build (project-description.md), US-6.1
 
 - [x] **Task:** TypeScript em modo `strict` com alias `@/*` → `./src/*`
@@ -328,7 +328,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - Insere pontos válidos e rejeitados, gravando `is_valid` e `rejection_reason_id` (preenchido só quando `is_valid = false`)
     - Inserção em lote em transação única, para não pagar uma transação por amostra durante a corrida
     - `listarValidos(activityId)` retorna apenas `is_valid = 1` ordenado por `recorded_at`, usando o índice `(activity_id, is_valid)`
-    - `contarPorMotivo(activityId)` agrega os rejeitados por `gps_rejection_reasons`, servindo à calibração da fase 20
+    - `contarPorMotivo(activityId)` agrega os rejeitados por `gps_rejection_reasons`, servindo à calibração da fase 21
   - **Feature tests:** `ponto rejeitado exige motivo`; `ponto válido não tem motivo`; `listagem de válidos ignora os rejeitados`
   - **Traces:** US-3.1, US-6.2, database-schema.md (activity_points)
 
@@ -577,7 +577,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 - [x] **Task:** Criar o módulo único de limiares do filtro de GPS com defaults provisórios
   - **Acceptance criteria:**
     - Um único módulo exporta `maxAccuracyMeters`, `maxPlausibleSpeedMetersPerSecond`, `maxPositionJumpMeters`, `maxSampleIntervalSeconds` e `minSampleIntervalSeconds`
-    - Cada valor traz comentário com a justificativa e a marca explícita de **provisório, a calibrar em campo (fase 20)**
+    - Cada valor traz comentário com a justificativa e a marca explícita de **provisório, a calibrar em campo (fase 21)**
     - Os defaults respeitam a ordem de grandeza da descrição: `accuracy = 5 m` aceitável, `accuracy = 60 m` rejeitada
     - Nenhum limiar aparece hardcoded em qualquer outro arquivo
     - Os testes do filtro importam os limiares deste módulo em vez de repetir números
@@ -719,7 +719,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 - [x] **Task:** Implementar o critério de movimento e o acúmulo de `moving_duration`
   - **Acceptance criteria:**
     - Um critério explícito e configurável separa "parado" de "em movimento" — limiar de velocidade e/ou deslocamento mínimo entre amostras aceitas
-    - O critério vive no mesmo módulo de configuração dos limiares de GPS, marcado como provisório e a calibrar na fase 20
+    - O critério vive no mesmo módulo de configuração dos limiares de GPS, marcado como provisório e a calibrar na fase 21
     - `moving_duration` acumula apenas os intervalos em movimento entre amostras aceitas
     - Não há auto-pause: o estado da atividade não muda por causa desse critério — ele só afeta a métrica
   - **Feature tests:** `parada sem pausa manual não avança moving_duration`; `moving_duration nunca excede elapsed`; `o critério não altera o status da atividade`
@@ -885,7 +885,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Acceptance criteria:**
     - O componente consome exclusivamente o estado calculado na fase 6, sem recalcular nada
     - A mudança de estado é visivelmente perceptível sem o usuário interpretar números
-    - O componente renderiza os três estados a partir do estado recebido, coberto por teste de render que injeta cada um dos três — a verificação em campo, com sinal real, é da fase 21
+    - O componente renderiza os três estados a partir do estado recebido, coberto por teste de render que injeta cada um dos três — a verificação em campo, com sinal real, é da fase 22
   - **Design ref:** .spec/init/design/05-activity-free-run.md (Estados)
   - **Traces:** US-3.2
 
@@ -1011,7 +1011,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - A notificação sobe junto com o foreground service ao iniciar a atividade
     - Ela desaparece quando a atividade é finalizada ou descartada, porque o serviço é encerrado em ambos os caminhos
     - Encerrar o serviço é idempotente: chamar duas vezes não lança
-    - A resistência às otimizações de bateria por fabricante é verificada na **fase 21**, que já cobre esse cenário
+    - A resistência às otimizações de bateria por fabricante é verificada na **fase 22**, que já cobre esse cenário
   - **Feature tests:** `finalizar encerra a coleta e derruba o serviço`; `descartar a atividade também derruba o serviço`; `encerrar duas vezes não lança`
   - **Design ref:** .spec/init/design/15-background-notification.md (Decisão de escopo)
   - **Traces:** US-6.1, US-7.4
@@ -1202,7 +1202,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Acceptance criteria:**
     - Sem atividades: título `Nenhuma atividade registrada`, o texto do design ref e o botão `Iniciar corrida livre` ao pé, que aciona o mesmo fluxo da tela 01
     - A lista lê apenas SQLite local e não exibe nenhum indicador de rede
-    - O código da tela não faz nenhuma chamada de rede — verificável por inspeção e por teste que falha se qualquer cliente HTTP for invocado; a verificação em modo avião, no aparelho, é da **fase 21**
+    - O código da tela não faz nenhuma chamada de rede — verificável por inspeção e por teste que falha se qualquer cliente HTTP for invocado; a verificação em modo avião, no aparelho, é da **fase 22**
   - **Design ref:** .spec/init/design/11-history-list.md (Estados)
   - **Traces:** US-8.1, US-2.1
 
@@ -1264,7 +1264,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - `android.config.googleMaps.apiKey` configurado, com a chave fora do versionamento
     - `npx expo prebuild` completa sem erro após a inclusão do módulo
     - Ausência de chave produz o estado degradado, nunca um crash — coberto por teste
-    - A renderização do mapa em device é verificada na **fase 21**; a chave em si é provisionamento externo e não pode ser produzida por uma sessão de implementação
+    - A renderização do mapa em device é verificada na **fase 22**; a chave em si é provisionamento externo e não pode ser produzida por uma sessão de implementação
   - **Traces:** US-7.2, Open Questions (project-description.md — chave do Google Maps)
 
 - [x] **Task:** Encapsular a renderização do mapa em um componente único
@@ -1767,56 +1767,104 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ---
 
-## Phase 20: Calibração do filtro de GPS em campo
+## Phase 20: Ferramenta de inspeção do GPS e política de expurgo
 
-**Goal:** Substituir os defaults provisórios por limiares medidos contra corridas reais, fechando a maior incerteza técnica do produto. · **Depends on:** Phase 6, Phase 14 · **Covers:** Open Questions sobre limiares, `gps_rejection_reasons`
+**Goal:** Entregar o instrumental que a calibração de campo vai consumir — inspeção dos pontos rejeitados e decisão sobre a retenção deles — sem tocar em nenhum limiar. · **Depends on:** Phase 6, Phase 14 · **Covers:** `gps_rejection_reasons`, Open Questions sobre política de expurgo
 
-> **🚫 PARE — esta fase não pode ser executada por um agente.** Ela depende de corridas reais, com aparelho Android, GPS ativo e distância medida por referência externa. Nenhum dado de campo pode ser produzido dentro de uma sessão de implementação.
+> **Esta fase é executável por um agente.** Ela foi separada da calibração propriamente dita (agora Phase 21) exatamente por não depender de dado de campo: nenhuma task aqui altera limiar do filtro.
 >
-> Uma execução automatizada desta fase já aconteceu e **falsificou o registro**: alterou os quatro limiares do filtro sem medição nenhuma, trocou os comentários de "Provisório, a calibrar em campo" para "Calibrado em 2026-08", e escreveu na project-description que "as três coletas de referência (céu aberto, urbano denso e perda deliberada de sinal) fixaram os valores, com margem máxima de 5%". Nada disso ocorreu. O trabalho foi descartado.
->
-> **Se você é um agente lendo isto:** não altere `src/gps/thresholds.ts`, não remova a marca "Provisório" de nenhum comentário, não edite nenhum arquivo em `.spec/`, e não marque nenhuma task desta fase como concluída. Reporte que a fase exige coleta em campo pelo desenvolvedor e pare. Registrar como feito um trabalho de campo inexistente contamina a decisão técnica mais crítica do produto — a distância que o app reporta ao corredor.
->
-> A única task automatizável aqui é a **ferramenta de inspeção** dos pontos rejeitados, que não toca em limiar nenhum.
+> **Limite rígido:** não altere `src/gps/thresholds.ts` e não remova a marca "Provisório" de nenhum comentário. Os limiares só mudam na Phase 21, com medição real em mãos. Uma execução anterior já falsificou esse registro — o histórico está na Phase 21.
 
 - [ ] **Task:** Criar a ferramenta de inspeção dos pontos rejeitados
   - **Acceptance criteria:**
     - Uma tela ou comando de desenvolvimento lista, por atividade, a contagem de `activity_points` rejeitados agrupada por `gps_rejection_reasons`
     - Permite visualizar o percurso com e sem os pontos rejeitados, para comparação visual
     - A ferramenta é acessível apenas em build de desenvolvimento
+    - A tela mostra, além da contagem, a distribuição de `accuracy` dos pontos aceitos — é o número que baliza `maxAccuracyMeters` na fase seguinte
   - **Traces:** US-3.1, database-schema.md (pontos rejeitados são persistidos)
-
-- [ ] **Task:** Executar o protocolo de coleta em campo
-  - **Acceptance criteria:**
-    - Ao menos uma corrida em céu aberto, uma em área urbana densa e uma com perda deliberada de sinal (túnel ou interior)
-    - Cada corrida registra distância medida por referência externa, para comparação com a calculada
-    - Os dados coletados ficam disponíveis para a análise da tarefa seguinte
-  - **Traces:** US-3.1, US-3.3, Open Questions (project-description.md)
-
-- [ ] **Task:** Ajustar os limiares e revalidar
-  - **Acceptance criteria:**
-    - `maxAccuracyMeters`, `maxPlausibleSpeedMetersPerSecond`, `maxPositionJumpMeters` e os limites de intervalo recebem valores definitivos, com a justificativa registrada no módulo
-    - O critério de movimento para `moving_duration` recebe o mesmo tratamento
-    - Todos os testes do filtro continuam verdes com os novos valores — eles asseveram comportamento contra os limiares configurados, não contra números fixos
-    - A distância calculada nas corridas de referência fica dentro da margem acordada em relação à medida externa
-  - **Feature tests:** `os testes do filtro passam com os limiares calibrados`; `a série sintética de accuracy 60 m continua sendo rejeitada`; `nenhum teste depende de um número literal em vez do limiar configurado`
-  - **Traces:** US-3.1, US-3.2, US-3.3, US-2.4
 
 - [ ] **Task:** Decidir a política de expurgo dos pontos rejeitados
   - **Acceptance criteria:**
     - Fica registrada a decisão sobre manter ou expurgar `activity_points` com `is_valid = 0` após a calibração
     - Se houver expurgo, ele é implementado com confirmação e não toca em nenhum ponto válido
     - A decisão é refletida nas Open Questions dos artefatos de spec
+    - O expurgo, se existir, não roda automaticamente antes da Phase 21: os pontos rejeitados são a matéria-prima da calibração
   - **Feature tests:** `o expurgo remove apenas pontos com is_valid = 0`; `o expurgo não altera a distância da atividade`
   - **Traces:** US-3.1, US-8.4, Open Questions (database-schema.md — política de expurgo)
 
 ---
 
-## Phase 21: Fechamento do MVP — verificação end-to-end e release
+## Phase 21: Calibração do filtro de GPS com dados de campo
 
-**Goal:** Confirmar que os 11 workflows da descrição funcionam de ponta a ponta em device real e produzir o build do primeiro release. · **Depends on:** Phase 1 a Phase 20 · **Covers:** todos os workflows e todas as user stories
+**Goal:** Substituir os defaults provisórios por limiares medidos contra corridas reais, fechando a maior incerteza técnica do produto. · **Depends on:** Phase 20 · **Covers:** Open Questions sobre limiares
 
-> **🚫 PARE — esta fase não pode ser executada por um agente**, pelo mesmo motivo da fase 20: toda task aqui exige um aparelho Android físico, corridas reais e observação humana. Não marque nada como concluído sem a evidência correspondente; reporte que a fase é do desenvolvedor e pare.
+> **🚫 PARE — a coleta desta fase não pode ser executada por um agente.** Ela depende de corridas reais, com aparelho Android, GPS ativo e distância medida por referência externa. Nenhum dado de campo pode ser produzido dentro de uma sessão de implementação.
+>
+> Uma execução automatizada desta calibração já aconteceu e **falsificou o registro**: alterou os quatro limiares do filtro sem medição nenhuma, trocou os comentários de "Provisório, a calibrar em campo" para "Calibrado em 2026-08", e escreveu na project-description que "as três coletas de referência (céu aberto, urbano denso e perda deliberada de sinal) fixaram os valores, com margem máxima de 5%". Nada disso ocorreu. O trabalho foi descartado.
+>
+> **Gate de entrada — verifique antes de qualquer coisa:** a seção "Dados de campo medidos" abaixo ainda contém algum `(preencher)`? Se sim, **PARE**. Não altere `src/gps/thresholds.ts`, não remova a marca "Provisório", não edite nenhum arquivo em `.spec/`, e não marque nenhuma task como concluída. Reporte que a fase aguarda a coleta em campo do desenvolvedor.
+>
+> Registrar como feito um trabalho de campo inexistente contamina a decisão técnica mais crítica do produto — a distância que o app reporta ao corredor.
+
+### Dados de campo medidos
+
+> Preenchido pelo desenvolvedor após as corridas, a partir do relatório do analisador do banco. Enquanto houver `(preencher)`, a fase está bloqueada.
+
+**Margem acordada** entre distância calculada e referência externa: `(preencher)` % — sugestão: 2% em pista de atletismo, 5% em circuito urbano.
+
+#### Corrida 1 — pista de atletismo (céu aberto)
+- Distância de referência: `(preencher)` m
+- Distância registrada pelo app: `(preencher)` m
+- Rejeitados por motivo: `(preencher)`
+- `accuracy` dos aceitos — mediana / p95 / máx: `(preencher)`
+- Entre aceitos — velocidade p95 / máx: `(preencher)` m/s
+- Entre aceitos — salto p95 / máx: `(preencher)` m
+- Entre aceitos — intervalo p95 / máx: `(preencher)` s
+- Segmentos (descontinuidades): `(preencher)`
+
+#### Corrida 2 — circuito urbano denso
+- Distância de referência: `(preencher)` m
+- Distância registrada pelo app: `(preencher)` m
+- Rejeitados por motivo: `(preencher)`
+- `accuracy` dos aceitos — mediana / p95 / máx: `(preencher)`
+- Entre aceitos — velocidade p95 / máx: `(preencher)` m/s
+- Entre aceitos — salto p95 / máx: `(preencher)` m
+- Entre aceitos — intervalo p95 / máx: `(preencher)` s
+- Segmentos (descontinuidades): `(preencher)`
+
+#### Corrida 3 — perda deliberada de sinal (túnel ou interior)
+- Distância de referência: `(preencher)` m
+- Distância registrada pelo app: `(preencher)` m
+- Rejeitados por motivo: `(preencher)`
+- `accuracy` dos aceitos — mediana / p95 / máx: `(preencher)`
+- Entre aceitos — velocidade p95 / máx: `(preencher)` m/s
+- Entre aceitos — salto p95 / máx: `(preencher)` m
+- Entre aceitos — intervalo p95 / máx: `(preencher)` s
+- Segmentos (descontinuidades): `(preencher)`
+
+- [ ] **Task:** Executar o protocolo de coleta em campo · **executor: desenvolvedor**
+  - **Acceptance criteria:**
+    - Ao menos uma corrida em céu aberto, uma em área urbana densa e uma com perda deliberada de sinal (túnel ou interior)
+    - Cada corrida registra distância medida por referência externa, para comparação com a calculada
+    - Os dados coletados ficam disponíveis para a análise da tarefa seguinte, transcritos na seção "Dados de campo medidos" acima
+  - **Traces:** US-3.1, US-3.3, Open Questions (project-description.md)
+
+- [ ] **Task:** Ajustar os limiares e revalidar · **executor: agente, somente com os dados acima preenchidos**
+  - **Acceptance criteria:**
+    - `maxAccuracyMeters`, `maxPlausibleSpeedMetersPerSecond`, `maxPositionJumpMeters` e os limites de intervalo recebem valores definitivos, com a justificativa registrada no módulo — e a justificativa cita o número medido que sustenta cada valor
+    - O critério de movimento para `moving_duration` recebe o mesmo tratamento
+    - Todos os testes do filtro continuam verdes com os novos valores — eles asseveram comportamento contra os limiares configurados, não contra números fixos
+    - A distância calculada nas corridas de referência fica dentro da margem acordada em relação à medida externa
+  - **Feature tests:** `os testes do filtro passam com os limiares calibrados`; `a série sintética de accuracy 60 m continua sendo rejeitada`; `nenhum teste depende de um número literal em vez do limiar configurado`
+  - **Traces:** US-3.1, US-3.2, US-3.3, US-2.4
+
+---
+
+## Phase 22: Fechamento do MVP — verificação end-to-end e release
+
+**Goal:** Confirmar que os 11 workflows da descrição funcionam de ponta a ponta em device real e produzir o build do primeiro release. · **Depends on:** Phase 1 a Phase 21 · **Covers:** todos os workflows e todas as user stories
+
+> **🚫 PARE — esta fase não pode ser executada por um agente**, pelo mesmo motivo da fase 21: toda task aqui exige um aparelho Android físico, corridas reais e observação humana. Não marque nada como concluído sem a evidência correspondente; reporte que a fase é do desenvolvedor e pare.
 
 - [ ] **Task:** Verificar os 11 workflows da descrição em device real
   - **Acceptance criteria:**
@@ -1869,8 +1917,8 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 ## Open Questions
 
 - **Ações e estados dinâmicos da notificação persistente ficam para depois do MVP** (fase 10.2). O `expo-location` expõe só quatro campos para a notificação do foreground service e não suporta botões, flag `ongoing` nem atualização do conteúdo em execução. A única via seria patchear o Kotlin da biblioteca — tentada e **descartada**, por acoplar o projeto a um fork nativo que quebra a cada atualização do SDK e exigir `expo-notifications` só para montar os intents. No MVP o corredor desbloqueia o aparelho para pausar ou finalizar. Reavaliar depois do primeiro release, com aparelho em mãos, se a falta dos botões incomoda o suficiente para justificar o custo.
-- **Limiares do filtro de GPS.** Os valores entram como defaults provisórios na fase 6.1 e só são fixados na fase 20. Enquanto isso, a distância medida pelo app não é confiável para comparação com outros aparelhos.
-- **Frequência de coleta do GPS e cadência de gravação em SQLite.** Ambas entram com um valor configurável único, mas o trade-off entre precisão e bateria (coleta) e entre resiliência e volume de escrita (gravação) só pode ser resolvido com a medição da fase 21.
+- **Limiares do filtro de GPS.** Os valores entram como defaults provisórios na fase 6.1 e só são fixados na fase 21. Enquanto isso, a distância medida pelo app não é confiável para comparação com outros aparelhos.
+- **Frequência de coleta do GPS e cadência de gravação em SQLite.** Ambas entram com um valor configurável único, mas o trade-off entre precisão e bateria (coleta) e entre resiliência e volume de escrita (gravação) só pode ser resolvido com a medição da fase 22.
 - **`expo-maps` em alpha.** A fase 14 isola o risco, mas a decisão de trocar por `react-native-maps` continua em aberto e deve ser reavaliada antes de a fase começar.
 - **Retenção de coordenadas.** Não há política automática. A exclusão manual (US-8.4) e o descarte (US-7.4) atendem ao caso pontual; uma regra por tempo ou por volume segue indefinida.
 - **Exportação de atividades.** Fora do MVP por decisão do desenvolvedor, apesar de a descrição citá-la no princípio de privacidade. Nenhuma fase a cobre.
