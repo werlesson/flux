@@ -1177,7 +1177,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 13.1: Lista do histórico
 
-- [ ] **Task:** Implementar a tela 11 com a lista de atividades
+- [x] **Task:** Implementar a tela 11 com a lista de atividades
   - **Acceptance criteria:**
     - Consulta `activities` com `finished_at IS NOT NULL`, ordenada estritamente por `started_at DESC`
     - Atividade em andamento não aparece na lista — ela é tratada pela tela 13
@@ -1186,7 +1186,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/11-history-list.png
   - **Traces:** US-8.1
 
-- [ ] **Task:** Implementar o cartão de atividade da lista
+- [x] **Task:** Implementar o cartão de atividade da lista
   - **Acceptance criteria:**
     - Data e hora (`30 ago · 07:42`), origem, distância, tempo total e `Pace médio 9:20/km`
     - A origem usa `training_session_name` (snapshot), permanecendo correta depois que o treino é excluído da biblioteca
@@ -1196,7 +1196,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/11-history-list.png
   - **Traces:** US-8.1, US-7.3
 
-- [ ] **Task:** Implementar o estado vazio e a operação offline do histórico
+- [x] **Task:** Implementar o estado vazio e a operação offline do histórico
   - **Acceptance criteria:**
     - Sem atividades: título `Nenhuma atividade registrada`, o texto do design ref e o botão `Iniciar corrida livre` ao pé, que aciona o mesmo fluxo da tela 01
     - A lista lê apenas SQLite local e não exibe nenhum indicador de rede
@@ -1206,7 +1206,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 13.2: Detalhe da atividade
 
-- [ ] **Task:** Implementar a tela 12 com o detalhe da atividade
+- [x] **Task:** Implementar a tela 12 com o detalhe da atividade
   - **Acceptance criteria:**
     - Cabeçalho com data e hora e a ação `Excluir`; origem exibida abaixo
     - Destaques e grade de métricas idênticos aos da tela 08
@@ -1215,7 +1215,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/12-history-detail.png
   - **Traces:** US-8.2, US-2.5
 
-- [ ] **Task:** Implementar a seção resumida de etapas executadas
+- [x] **Task:** Implementar a seção resumida de etapas executadas
   - **Acceptance criteria:**
     - Cabeçalho `ETAPAS EXECUTADAS · 14` com as contagens `11 concluídas`, `2 puladas`, `1 não realizada`, agregadas de `activity_steps` por `step_execution_status_id`
     - A ação `Ver todas` abre a lista completa com status e duração real
@@ -1224,7 +1224,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/12-history-detail.png
   - **Traces:** US-8.2, US-4.3, US-4.4
 
-- [ ] **Task:** Implementar a seção de esforço percebido nos dois estados
+- [x] **Task:** Implementar a seção de esforço percebido nos dois estados
   - **Acceptance criteria:**
     - Avaliada: `ESFORÇO PERCEBIDO` com valor `6/10`, rótulo da faixa, observações e ação `Editar`
     - Pendente: faixa ouro `PENDENTE DE AVALIAÇÃO` com o texto do design ref e botão `Avaliar esforço`
@@ -1232,7 +1232,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/12-history-detail.md (Estados)
   - **Traces:** US-8.3, US-7.3
 
-- [ ] **Task:** Implementar a edição posterior de RPE e observações
+- [x] **Task:** Implementar a edição posterior de RPE e observações
   - **Acceptance criteria:**
     - `Editar` e `Avaliar esforço` abrem a tela 09 em modo de edição, pré-preenchida quando houver valor
     - Salvar grava `rpe` e `notes` na atividade existente e retorna ao detalhe atualizado
@@ -1241,7 +1241,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `preencher rpe remove a marcação de pendente`; `edição não altera distância, tempos nem paces`; `edição de observações sem rpe mantém a atividade pendente`
   - **Traces:** US-8.3, US-7.3
 
-- [ ] **Task:** Implementar a exclusão da atividade a partir do detalhe
+- [x] **Task:** Implementar a exclusão da atividade a partir do detalhe
   - **Acceptance criteria:**
     - `Excluir` abre o diálogo `Excluir esta atividade?` com o texto do design ref e ações `Excluir` / `Cancelar`
     - Confirmar apaga a atividade, seus `activity_points` e seus `activity_splits` em cascata, em transação única
@@ -1256,7 +1256,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 **Goal:** Desenhar o traçado da corrida sobre um mapa estático, isolado numa fase própria pelo risco do `expo-maps` em alpha. · **Depends on:** Phase 12, Phase 13 · **Covers:** design refs 08 e 12 (mapa), workflow 10
 
-- [ ] **Task:** Instalar e configurar `expo-maps` com a chave do Google Maps
+- [x] **Task:** Instalar e configurar `expo-maps` com a chave do Google Maps
   - **Acceptance criteria:**
     - `expo-maps` instalado na versão compatível com o SDK 57 e a versão exata fixada
     - `android.config.googleMaps.apiKey` configurado, com a chave fora do versionamento
@@ -1265,7 +1265,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
     - A renderização do mapa em device é verificada na **fase 21**; a chave em si é provisionamento externo e não pode ser produzida por uma sessão de implementação
   - **Traces:** US-7.2, Open Questions (project-description.md — chave do Google Maps)
 
-- [ ] **Task:** Encapsular a renderização do mapa em um componente único
+- [x] **Task:** Encapsular a renderização do mapa em um componente único
   - **Acceptance criteria:**
     - Um único componente concentra toda a dependência de `expo-maps`; nenhuma tela importa a biblioteca diretamente
     - A interface do componente recebe apenas a lista de coordenadas e não expõe tipos da biblioteca
@@ -1273,7 +1273,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/08-activity-result.md (Notas de implementação)
   - **Traces:** US-7.2, Open Questions (project-description.md — expo-maps em alpha)
 
-- [ ] **Task:** Desenhar a polyline apenas com pontos válidos
+- [x] **Task:** Desenhar a polyline apenas com pontos válidos
   - **Acceptance criteria:**
     - O traçado usa exclusivamente `activity_points` com `is_valid = 1`, ordenados por `recorded_at`
     - Lacunas de sinal não são ligadas por segmento reto — o traçado é interrompido e retomado
@@ -1281,7 +1281,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `pontos rejeitados não entram na polyline`; `lacuna gera segmentos separados e não uma reta`
   - **Traces:** US-7.2, US-3.1, US-3.3
 
-- [ ] **Task:** Implementar o enquadramento automático do percurso
+- [x] **Task:** Implementar o enquadramento automático do percurso
   - **Acceptance criteria:**
     - O mapa ajusta a região para enquadrar o percurso inteiro, com margem
     - Percurso muito curto não resulta em zoom máximo ilegível
@@ -1289,7 +1289,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/08-activity-result.png
   - **Traces:** US-7.2
 
-- [ ] **Task:** Implementar a degradação do mapa
+- [x] **Task:** Implementar a degradação do mapa
   - **Acceptance criteria:**
     - Sem pontos válidos, o mapa é omitido e substituído pelo aviso `SEM PERCURSO PARA EXIBIR` com o texto do design ref
     - Falha de carregamento da biblioteca ou dos tiles cai no mesmo aviso, sem quebrar o layout nem a tela
@@ -1297,7 +1297,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/08-activity-result.md (Estados — Sem pontos válidos)
   - **Traces:** US-7.2
 
-- [ ] **Task:** Integrar o mapa às telas 08 e 12
+- [x] **Task:** Integrar o mapa às telas 08 e 12
   - **Acceptance criteria:**
     - O mapa aparece na tela de resultado e no detalhe do histórico, com a densidade reduzida especificada (mapa menor, mais respiro entre seções)
     - Em corrida livre, sem a seção de etapas, o mapa fica maior conforme o design ref
@@ -1311,7 +1311,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 **Goal:** Entregar a biblioteca onde os treinos vivem: listar, abrir, editar e excluir. · **Depends on:** Phase 5, Phase 3 · **Covers:** design ref 02
 
-- [ ] **Task:** Implementar a tela 02 com a lista de treinos
+- [x] **Task:** Implementar a tela 02 com a lista de treinos
   - **Acceptance criteria:**
     - Cabeçalho `Biblioteca de treinos` com voltar e botão primário fixo `Novo treino`
     - Lista ordenada por atualização mais recente, exibindo apenas `training_sessions` com `deleted_at IS NULL`
@@ -1320,7 +1320,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/02-training-library.png
   - **Traces:** US-1.1, US-1.3
 
-- [ ] **Task:** Implementar o cartão de treino
+- [x] **Task:** Implementar o cartão de treino
   - **Acceptance criteria:**
     - Nome do treino, linha de metadados `4 etapas · 34 min estimados` e menu `⋮`
     - A contagem de etapas é o número de linhas de `training_steps` do treino, **não** a sequência executável expandida
@@ -1328,7 +1328,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/02-training-library.png
   - **Traces:** US-1.1, US-1.2
 
-- [ ] **Task:** Implementar o resumo compacto das etapas em chips
+- [x] **Task:** Implementar o resumo compacto das etapas em chips
   - **Acceptance criteria:**
     - Os chips seguem a ordem dos `training_blocks` por `position`
     - Bloco com `repeat_count > 1` renderiza `N× <etapas separadas por " + ">` (ex.: `6× 2 min corrida + 2 min caminhada`)
@@ -1337,14 +1337,14 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `bloco de repetição vira um único chip com o prefixo N×`; `bloco simples vira um chip sem prefixo`; `a ordem dos chips segue position`
   - **Traces:** US-1.2, US-1.1
 
-- [ ] **Task:** Implementar o estado vazio da biblioteca
+- [x] **Task:** Implementar o estado vazio da biblioteca
   - **Acceptance criteria:**
     - Título `Nenhum treino salvo` e o texto exato do design ref
     - O botão `Novo treino` permanece visível e funcional
   - **Design ref:** .spec/init/design/02-training-library.md (Estados)
   - **Traces:** US-1.1
 
-- [ ] **Task:** Implementar o menu `⋮` com editar e excluir
+- [x] **Task:** Implementar o menu `⋮` com editar e excluir
   - **Acceptance criteria:**
     - `Editar` abre a tela 03 com o treino carregado
     - `Excluir` abre o diálogo de confirmação
@@ -1352,7 +1352,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/02-training-library.md (Interações)
   - **Traces:** US-1.3, US-1.4
 
-- [ ] **Task:** Implementar a exclusão de treino com confirmação
+- [x] **Task:** Implementar a exclusão de treino com confirmação
   - **Acceptance criteria:**
     - Diálogo com título `Excluir este treino?` e o texto `As atividades já realizadas com ele continuam no histórico.`
     - Confirmar faz soft delete gravando `deleted_at`; o treino deixa de aparecer na biblioteca imediatamente
@@ -1361,7 +1361,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `exclusão é soft delete e preserva as atividades`; `treino excluído some da listagem`; `o histórico continua exibindo o nome do treino após a exclusão`
   - **Traces:** US-1.4, US-8.1
 
-- [ ] **Task:** Implementar o estado `Em execução`
+- [x] **Task:** Implementar o estado `Em execução`
   - **Acceptance criteria:**
     - Havendo atividade em andamento vinculada a um treino, o cartão desse treino exibe o rótulo `Em execução`
     - As ações `Editar` e `Excluir` ficam desabilitadas nesse cartão
@@ -1370,7 +1370,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `treino em execução não pode ser editado`; `treino em execução não pode ser excluído`; `outros treinos continuam editáveis`
   - **Traces:** US-1.3, US-1.4
 
-- [ ] **Task:** Ligar a contagem de treinos da tela de Início
+- [x] **Task:** Ligar a contagem de treinos da tela de Início
   - **Acceptance criteria:**
     - A linha `Biblioteca de treinos` da tela 01 reflete a contagem real de treinos não excluídos
     - A contagem atualiza ao voltar da biblioteca após criar ou excluir um treino
@@ -1386,7 +1386,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 16.1: Estrutura do editor
 
-- [ ] **Task:** Implementar o layout da tela 03
+- [x] **Task:** Implementar o layout da tela 03
   - **Acceptance criteria:**
     - Cabeçalho `Novo treino` ou `Editar treino` com voltar e ação `Salvar`
     - Campo `NOME`, seção `ETAPAS` e botão `+ Adicionar etapa`
@@ -1395,7 +1395,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/03-training-editor.png
   - **Traces:** US-1.1, US-1.3
 
-- [ ] **Task:** Implementar a linha de etapa
+- [x] **Task:** Implementar a linha de etapa
   - **Acceptance criteria:**
     - Alça de arraste `≡`, barra colorida do tipo, nome do tipo, duração em `mm:ss` e remover `✕`
     - A cor da barra vem da cor por tipo de etapa definida na fase 4
@@ -1403,7 +1403,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/03-training-editor.png
   - **Traces:** US-1.1
 
-- [ ] **Task:** Implementar o sheet `Nova etapa`
+- [x] **Task:** Implementar o sheet `Nova etapa`
   - **Acceptance criteria:**
     - Seção `TIPO` listando exatamente `Aquecimento`, `Corrida`, `Caminhada`, `Recuperação`, `Desaquecimento`, lidos de `step_types` ativos
     - Seção `DURAÇÃO` com seletor de minutos e segundos, e botão `Adicionar`
@@ -1412,7 +1412,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/03-training-editor.png
   - **Traces:** US-1.1
 
-- [ ] **Task:** Implementar a reordenação de etapas por arraste
+- [x] **Task:** Implementar a reordenação de etapas por arraste
   - **Acceptance criteria:**
     - Arrastar `≡` reordena as etapas e atualiza `position` de forma contígua
     - Dentro de um bloco, a reordenação é local ao bloco e não move a etapa para fora dele
@@ -1422,7 +1422,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 16.2: Blocos de repetição e validações
 
-- [ ] **Task:** Implementar o agrupamento de etapas em bloco
+- [x] **Task:** Implementar o agrupamento de etapas em bloco
   - **Acceptance criteria:**
     - Selecionar duas ou mais etapas **consecutivas** revela a ação `Agrupar em bloco` e o campo de repetições
     - O número de repetições tem mínimo 2; valor 1 ou menor bloqueia a confirmação com a mensagem `O bloco precisa repetir ao menos 2 vezes`
@@ -1431,7 +1431,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `agrupar 2 etapas em 6 repetições grava 1 bloco e 2 etapas`; `repeat_count 1 é rejeitado no agrupamento`; `etapas não consecutivas não podem ser agrupadas`
   - **Traces:** US-1.2
 
-- [ ] **Task:** Implementar o desagrupamento
+- [x] **Task:** Implementar o desagrupamento
   - **Acceptance criteria:**
     - `Desagrupar` devolve as etapas filhas à sequência linear, na mesma posição relativa
     - Cada etapa volta a ser um bloco de `repeat_count = 1` — nenhuma `training_step` fica sem bloco
@@ -1439,7 +1439,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `desagrupar preserva a ordem das etapas`; `cada etapa desagrupada vira um bloco de repeat_count 1`; `a duração estimada cai para a soma simples`
   - **Traces:** US-1.2
 
-- [ ] **Task:** Implementar o cálculo da duração estimada
+- [x] **Task:** Implementar o cálculo da duração estimada
   - **Acceptance criteria:**
     - Duração estimada = soma de `duration_seconds` de cada bloco multiplicada pelo seu `repeat_count`
     - O exemplo canônico rende 2040 s: `300 + 6×(120+120) + 300` → `34:00`
@@ -1448,7 +1448,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `o treino canônico soma 2040 s`; `alterar repeat_count altera a duração estimada`; `remover etapa recalcula imediatamente`; `o valor materializado bate com o calculado`
   - **Traces:** US-1.1, US-1.2, US-1.3
 
-- [ ] **Task:** Implementar as validações de salvamento
+- [x] **Task:** Implementar as validações de salvamento
   - **Acceptance criteria:**
     - Treino sem nenhuma etapa não pode ser salvo; a lista exibe `Adicione a primeira etapa` e `Salvar` fica desabilitado
     - Nome vazio desabilita `Salvar`, com borda de erro e a mensagem `Informe um nome para o treino`
@@ -1457,7 +1457,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `treino sem etapas não é salvo`; `nome vazio não é salvo`; `etapa com duração zero não é adicionada`
   - **Traces:** US-1.1, US-1.3
 
-- [ ] **Task:** Implementar a persistência do treino ao salvar
+- [x] **Task:** Implementar a persistência do treino ao salvar
   - **Acceptance criteria:**
     - Treino, blocos e etapas são gravados em transação única, com `position` contígua em ambos os níveis
     - Na edição, blocos e etapas removidos na UI são removidos do banco na mesma transação
@@ -1466,7 +1466,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `salvar grava a árvore completa em uma transação`; `etapa removida na UI é removida do banco`; `falha na gravação não deixa treino parcial`
   - **Traces:** US-1.1, US-1.3
 
-- [ ] **Task:** Garantir que a edição não reescreve o histórico
+- [x] **Task:** Garantir que a edição não reescreve o histórico
   - **Acceptance criteria:**
     - Editar um treino não altera nenhuma linha de `activity_steps` de atividades passadas
     - As atividades executadas com a versão anterior mantêm tipo, instrução e duração planejada de então
@@ -1474,7 +1474,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `alterar a duração de uma etapa não altera o activity_step já gravado`; `alterar o nome do treino não altera training_session_name de atividades passadas`
   - **Traces:** US-1.3
 
-- [ ] **Task:** Bloquear a edição de treino em execução
+- [x] **Task:** Bloquear a edição de treino em execução
   - **Acceptance criteria:**
     - Não é possível abrir o editor de um treino vinculado a uma atividade em andamento
     - A tentativa exibe explicação em vez de falhar em silêncio
@@ -1488,7 +1488,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 **Goal:** Construir o componente que percorre as etapas durante a atividade, transiciona sozinho e registra o que foi realmente executado. · **Depends on:** Phase 7, Phase 16 · **Covers:** workflow 5, `activity_steps`
 
-- [ ] **Task:** Implementar a expansão dos blocos em sequência executável
+- [x] **Task:** Implementar a expansão dos blocos em sequência executável
   - **Acceptance criteria:**
     - A árvore de `training_blocks` e `training_steps` é expandida numa lista linear ordenada
     - Cada item carrega `position` global e `repetition_index` de 1 a `repeat_count` do bloco de origem
@@ -1497,7 +1497,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `o treino canônico expande em 14 etapas`; `repetition_index vai de 1 a 6 nas etapas do bloco`; `a ordem da expansão segue position de bloco e de etapa`
   - **Traces:** US-2.2, US-4.1, US-4.2
 
-- [ ] **Task:** Criar o snapshot das etapas executáveis no início da atividade
+- [x] **Task:** Criar o snapshot das etapas executáveis no início da atividade
   - **Acceptance criteria:**
     - Uma linha de `activity_steps` por etapa executável, criada na abertura da atividade
     - Cada linha copia `step_type_id`, `instructions` e `planned_duration_seconds` do momento da execução, e guarda `training_step_id` como referência opcional
@@ -1506,7 +1506,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `14 linhas de activity_steps são criadas no início`; `o snapshot copia instrução e duração planejada`; `todas começam como not_performed`
   - **Traces:** US-2.2, US-4.4, US-7.1
 
-- [ ] **Task:** Implementar o avanço automático entre etapas
+- [x] **Task:** Implementar o avanço automático entre etapas
   - **Acceptance criteria:**
     - A primeira etapa inicia assim que a atividade começa
     - Ao completar `planned_duration_seconds`, o motor avança automaticamente para a próxima etapa
@@ -1515,7 +1515,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `etapa avança ao completar a duração`; `um treino de 14 etapas avança pelas 14 sem intervenção`; `retornar do background aplica todas as transições devidas em ordem`; `nenhuma etapa é pulada ou duplicada na recuperação`
   - **Traces:** US-4.1, US-6.1
 
-- [ ] **Task:** Persistir a etapa concluída no momento da transição
+- [x] **Task:** Persistir a etapa concluída no momento da transição
   - **Acceptance criteria:**
     - Na transição, a etapa que termina recebe `actual_duration_seconds`, `distance_meters`, `finished_at` e status `completed`
     - A gravação acontece no momento da transição, não ao final da atividade
@@ -1524,7 +1524,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `etapa concluída é persistida na transição`; `duração real é gravada mesmo quando difere da planejada`; `encerramento forçado preserva as etapas já concluídas`
   - **Traces:** US-4.1, US-6.2, US-7.1
 
-- [ ] **Task:** Implementar o pulo de etapa
+- [x] **Task:** Implementar o pulo de etapa
   - **Acceptance criteria:**
     - Um comando avança para a próxima etapa a qualquer momento
     - A etapa pulada é registrada com status `skipped` e a `actual_duration_seconds` efetivamente executada
@@ -1533,7 +1533,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `etapa pulada é gravada como skipped com a duração executada`; `o motor continua na etapa seguinte`; `distância acumulada da atividade não muda ao pular`
   - **Traces:** US-4.3
 
-- [ ] **Task:** Implementar o encerramento do treino antes do fim
+- [x] **Task:** Implementar o encerramento do treino antes do fim
   - **Acceptance criteria:**
     - Encerrar a atividade a qualquer momento é permitido
     - A etapa corrente é gravada com a duração executada e status `skipped`
@@ -1542,7 +1542,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `encerrar no meio grava a etapa corrente como skipped`; `etapas não iniciadas ficam not_performed`; `a atividade encerrada no meio é válida no histórico com percurso e splits`
   - **Traces:** US-4.4, US-7.1
 
-- [ ] **Task:** Congelar o motor durante a pausa
+- [x] **Task:** Congelar o motor durante a pausa
   - **Acceptance criteria:**
     - Em pausa, o motor não avança etapas e o tempo restante da etapa fica congelado
     - Ao retomar, a etapa continua de onde parou, sem descontar o tempo pausado
@@ -1550,7 +1550,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `pausa não avança a etapa`; `retomada continua o tempo restante de onde parou`; `tempo pausado não conta para a duração real da etapa`
   - **Traces:** US-2.4, US-4.1
 
-- [ ] **Task:** Implementar a sinalização de fim do treino
+- [x] **Task:** Implementar a sinalização de fim do treino
   - **Acceptance criteria:**
     - Ao concluir a última etapa, o motor emite um evento de fim de treino
     - O evento é consumido pela UI (fase 18) e pela camada de orientações (fase 19)
@@ -1558,7 +1558,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `o evento de fim é emitido uma única vez`; `a última etapa é gravada como completed antes do evento`
   - **Traces:** US-4.1, US-7.1
 
-- [ ] **Task:** Registrar a distância e a duração reais por etapa
+- [x] **Task:** Registrar a distância e a duração reais por etapa
   - **Acceptance criteria:**
     - `distance_meters` de cada `activity_step` acumula apenas a distância dos pontos válidos ocorridos durante a etapa
     - A soma das distâncias das etapas é consistente com a distância total da atividade, dentro do erro de arredondamento
@@ -1566,7 +1566,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `a soma das distâncias das etapas bate com a distância da atividade`; `duração real da etapa exclui o tempo pausado`
   - **Traces:** US-4.1, US-7.1
 
-- [ ] **Task:** Tornar o estado do motor recuperável
+- [x] **Task:** Tornar o estado do motor recuperável
   - **Acceptance criteria:**
     - O estado do motor (etapa corrente, `repetition_index`, tempo decorrido na etapa) é derivável de `activity_steps` persistidos, sem depender de memória
     - Ao recuperar uma atividade interrompida, o motor retoma na etapa correta
@@ -1582,7 +1582,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 18.1: Pré-início do treino
 
-- [ ] **Task:** Implementar a tela 04 de pré-início
+- [x] **Task:** Implementar a tela 04 de pré-início
   - **Acceptance criteria:**
     - Cabeçalho com o nome do treino e métricas de topo `DURAÇÃO ESTIMADA` e `ETAPAS`
     - `ETAPAS` exibe a contagem da **sequência executável expandida** (14 no exemplo canônico), diferente das 4 entradas da biblioteca
@@ -1592,7 +1592,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/04-training-preview.png
   - **Traces:** US-2.2, US-1.2
 
-- [ ] **Task:** Implementar os bloqueios de início no pré-início
+- [x] **Task:** Implementar os bloqueios de início no pré-início
   - **Acceptance criteria:**
     - GPS sem precisão aceitável exibe o indicador em ouro e o toque em `Iniciar treino` abre o sheet da tela 07
     - Permissão ausente dispara a solicitação; negada, leva à variante bloqueante da tela 07
@@ -1600,7 +1600,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/04-training-preview.md (Estados)
   - **Traces:** US-2.2, US-2.1, US-6.3
 
-- [ ] **Task:** Implementar a criação da atividade estruturada
+- [x] **Task:** Implementar a criação da atividade estruturada
   - **Acceptance criteria:**
     - A atividade é criada com `activity_type_id` = `structured`, `training_session_id` e `training_session_name` (snapshot do nome)
     - O motor expande os blocos e cria os `activity_steps` na mesma transação da criação da atividade
@@ -1611,7 +1611,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 18.2: Tela de atividade estruturada
 
-- [ ] **Task:** Implementar o layout da tela 06
+- [x] **Task:** Implementar o layout da tela 06
   - **Acceptance criteria:**
     - Nome do treino em rótulo maiúsculo e repetição corrente ao lado
     - Cartão da etapa atual dominante, cartão `PRÓXIMA` abaixo, métricas gerais e dois botões lado a lado
@@ -1620,7 +1620,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/06-activity-structured.png
   - **Traces:** US-4.2
 
-- [ ] **Task:** Implementar o cartão da etapa atual
+- [x] **Task:** Implementar o cartão da etapa atual
   - **Acceptance criteria:**
     - Exibe o tipo da etapa, o rótulo `ETAPA ATUAL`, o tempo restante e a legenda `restam nesta etapa`
     - Barra de progresso da etapa proporcional a `actual_duration_seconds / planned_duration_seconds`
@@ -1629,7 +1629,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/06-activity-structured.png
   - **Traces:** US-4.2, US-4.1
 
-- [ ] **Task:** Implementar o cartão `PRÓXIMA` e o estado de última etapa
+- [x] **Task:** Implementar o cartão `PRÓXIMA` e o estado de última etapa
   - **Acceptance criteria:**
     - `PRÓXIMA` exibe o tipo e a duração da etapa seguinte
     - Na última etapa, o cartão é substituído por `Última etapa do treino`
@@ -1637,7 +1637,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/06-activity-structured.md (Estados)
   - **Traces:** US-4.2, US-4.1
 
-- [ ] **Task:** Implementar o indicador de repetição corrente
+- [x] **Task:** Implementar o indicador de repetição corrente
   - **Acceptance criteria:**
     - Exibe `3 de 6` a partir de `repetition_index` da etapa corrente sobre o `repeat_count` do bloco de origem
     - O indicador só aparece quando a etapa corrente pertence a um bloco com `repeat_count > 1`
@@ -1645,14 +1645,14 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `repetição corrente reflete repetition_index`; `o indicador é omitido em bloco de repeat_count 1`; `a repetição avança corretamente ao longo das 6 voltas`
   - **Traces:** US-4.2, US-1.2
 
-- [ ] **Task:** Implementar as métricas gerais na tela estruturada
+- [x] **Task:** Implementar as métricas gerais na tela estruturada
   - **Acceptance criteria:**
     - `TEMPO TOTAL`, `DISTÂNCIA` e `PACE MÉDIO` exibidos com os mesmos formatadores e a mesma fonte de dados da tela 05
     - As métricas continuam atualizando durante todas as transições de etapa
   - **Design ref:** .spec/init/design/06-activity-structured.png
   - **Traces:** US-2.3, US-4.2
 
-- [ ] **Task:** Implementar os estados da tela 06
+- [x] **Task:** Implementar os estados da tela 06
   - **Acceptance criteria:**
     - Precisão degradada: indicador ouro em faixa própria; resto inalterado
     - Sem sinal: indicador vermelho com o mesmo texto da tela 05, distância deixa de avançar e o motor continua avançando as etapas (depende de tempo, não de GPS)
@@ -1660,7 +1660,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/06-activity-structured.md (Estados)
   - **Traces:** US-3.2, US-3.3, US-2.4
 
-- [ ] **Task:** Ligar as ações `PULAR ETAPA`, `PAUSAR` e `FINALIZAR TREINO`
+- [x] **Task:** Ligar as ações `PULAR ETAPA`, `PAUSAR` e `FINALIZAR TREINO`
   - **Acceptance criteria:**
     - `PULAR ETAPA` registra a etapa atual como `skipped` com a duração executada e inicia a próxima
     - `PAUSAR`/`RETOMAR` congelam e retomam cronômetro, coleta e motor de treino simultaneamente
@@ -1677,7 +1677,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 19.1: Camada de locução e vibração
 
-- [ ] **Task:** Implementar o serviço de TTS em pt-BR
+- [x] **Task:** Implementar o serviço de TTS em pt-BR
   - **Acceptance criteria:**
     - `expo-speech` configurado com locale `pt-BR`
     - A fala funciona com a tela bloqueada e com o app em background
@@ -1686,7 +1686,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `falas concorrentes são enfileiradas e não sobrepostas`; `falha do expo-speech não interrompe a atividade` → força a rejeição da chamada e asserta que o motor e a coleta seguem
   - **Traces:** US-5.1, US-6.1
 
-- [ ] **Task:** Implementar a verbalização de números por extenso
+- [x] **Task:** Implementar a verbalização de números por extenso
   - **Acceptance criteria:**
     - Distância é falada por extenso (`Dois quilômetros`), nunca como numeral cru
     - Pace é falado como `nove minutos e cinco segundos`, nunca como `9:05`
@@ -1695,7 +1695,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `2000 m vira "Dois quilômetros"`; `545 s/km vira "nove minutos e cinco segundos"`; `1 km usa o singular`; `pace com zero segundos omite a parte dos segundos`
   - **Traces:** US-5.3, US-5.1
 
-- [ ] **Task:** Implementar o serviço de vibração
+- [x] **Task:** Implementar o serviço de vibração
   - **Acceptance criteria:**
     - `expo-haptics` dispara o padrão de vibração em cada gatilho de orientação
     - A vibração funciona com a tela bloqueada
@@ -1705,7 +1705,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 19.2: Gatilhos de orientação
 
-- [ ] **Task:** Implementar o aviso de início de etapa
+- [x] **Task:** Implementar o aviso de início de etapa
   - **Acceptance criteria:**
     - Ao iniciar cada etapa, o app fala a instrução correspondente (ex.: `Comece a correr`, `Caminhe por dois minutos`)
     - Quando a etapa não tem instrução própria, a locução é derivada do tipo e da duração
@@ -1714,7 +1714,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `cada transição de etapa dispara exatamente um aviso`; `etapa sem instrução usa a locução derivada do tipo`; `nenhum aviso é perdido quando várias transições são aplicadas ao voltar do background`
   - **Traces:** US-5.1, US-4.1
 
-- [ ] **Task:** Implementar o aviso de fim de etapa iminente
+- [x] **Task:** Implementar o aviso de fim de etapa iminente
   - **Acceptance criteria:**
     - Um aviso é emitido faltando exatamente 30 segundos para o fim da etapa
     - O aviso é falado (`Faltam trinta segundos`) e acompanhado de vibração
@@ -1723,7 +1723,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `etapa de 120 s dispara o aviso aos 90 s`; `etapa de 30 s não dispara o aviso`; `etapa de 25 s não dispara o aviso`; `pausa e retomada nos últimos 30 s não reemitem o aviso`
   - **Traces:** US-5.2
 
-- [ ] **Task:** Implementar o anúncio de quilômetro concluído
+- [x] **Task:** Implementar o anúncio de quilômetro concluído
   - **Acceptance criteria:**
     - A cada quilômetro completo, o app anuncia a distância e o pace do split (`Dois quilômetros. Pace nove minutos e cinco segundos.`)
     - O anúncio é acompanhado de vibração
@@ -1732,7 +1732,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Feature tests:** `o anúncio usa o pace do split e não o pace médio`; `o anúncio dispara em corrida livre`; `um segmento que fecha dois quilômetros anuncia ambos, em ordem`
   - **Traces:** US-5.3, US-2.5
 
-- [ ] **Task:** Garantir o funcionamento dos avisos com a tela bloqueada
+- [x] **Task:** Garantir o funcionamento dos avisos com a tela bloqueada
   - **Acceptance criteria:**
     - Os três gatilhos são emitidos com a tela bloqueada e o app em background
     - Nenhum gatilho depende de um componente React montado
@@ -1742,7 +1742,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 
 ### Phase 19.3: Preferências de orientação
 
-- [ ] **Task:** Implementar a tela 14 de orientações
+- [x] **Task:** Implementar a tela 14 de orientações
   - **Acceptance criteria:**
     - Sheet sobre a tela de atividade com título `Orientações`, aberto por ícone no cabeçalho da tela de atividade
     - Linha `Locução` com legenda `voz em pt-BR` e interruptor; linha `Vibração` com legenda `continua com a locução desligada` e interruptor
@@ -1753,7 +1753,7 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
   - **Design ref:** .spec/init/design/14-audio-cues.png
   - **Traces:** US-5.1, US-5.2, US-5.3
 
-- [ ] **Task:** Implementar a persistência das preferências de orientação
+- [x] **Task:** Implementar a persistência das preferências de orientação
   - **Acceptance criteria:**
     - As preferências são lidas e gravadas em `app_preferences`, pelas chaves `audio_cues_enabled` e `haptic_cues_enabled`
     - Elas persistem entre atividades e entre aberturas do app, e sobrevivem ao seed que roda a cada abertura
@@ -1768,6 +1768,14 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 ## Phase 20: Calibração do filtro de GPS em campo
 
 **Goal:** Substituir os defaults provisórios por limiares medidos contra corridas reais, fechando a maior incerteza técnica do produto. · **Depends on:** Phase 6, Phase 14 · **Covers:** Open Questions sobre limiares, `gps_rejection_reasons`
+
+> **🚫 PARE — esta fase não pode ser executada por um agente.** Ela depende de corridas reais, com aparelho Android, GPS ativo e distância medida por referência externa. Nenhum dado de campo pode ser produzido dentro de uma sessão de implementação.
+>
+> Uma execução automatizada desta fase já aconteceu e **falsificou o registro**: alterou os quatro limiares do filtro sem medição nenhuma, trocou os comentários de "Provisório, a calibrar em campo" para "Calibrado em 2026-08", e escreveu na project-description que "as três coletas de referência (céu aberto, urbano denso e perda deliberada de sinal) fixaram os valores, com margem máxima de 5%". Nada disso ocorreu. O trabalho foi descartado.
+>
+> **Se você é um agente lendo isto:** não altere `src/gps/thresholds.ts`, não remova a marca "Provisório" de nenhum comentário, não edite nenhum arquivo em `.spec/`, e não marque nenhuma task desta fase como concluída. Reporte que a fase exige coleta em campo pelo desenvolvedor e pare. Registrar como feito um trabalho de campo inexistente contamina a decisão técnica mais crítica do produto — a distância que o app reporta ao corredor.
+>
+> A única task automatizável aqui é a **ferramenta de inspeção** dos pontos rejeitados, que não toca em limiar nenhum.
 
 - [ ] **Task:** Criar a ferramenta de inspeção dos pontos rejeitados
   - **Acceptance criteria:**
@@ -1805,6 +1813,8 @@ O **corte do MVP é a fase 21**: todas as 21 fases compõem o primeiro release. 
 ## Phase 21: Fechamento do MVP — verificação end-to-end e release
 
 **Goal:** Confirmar que os 11 workflows da descrição funcionam de ponta a ponta em device real e produzir o build do primeiro release. · **Depends on:** Phase 1 a Phase 20 · **Covers:** todos os workflows e todas as user stories
+
+> **🚫 PARE — esta fase não pode ser executada por um agente**, pelo mesmo motivo da fase 20: toda task aqui exige um aparelho Android físico, corridas reais e observação humana. Não marque nada como concluído sem a evidência correspondente; reporte que a fase é do desenvolvedor e pare.
 
 - [ ] **Task:** Verificar os 11 workflows da descrição em device real
   - **Acceptance criteria:**

@@ -1,0 +1,9 @@
+# Os artefatos da cadeia .spec carregam um stamp sha256 dos seus inputs na
+# linha 3, e a checagem de frescor compara esse hash com o arquivo em disco.
+# Com a conversão automática para CRLF no checkout, os bytes em disco deixam de
+# bater com os do repositório e a cadeia inteira aparece como "stale" sem que
+# nada tenha mudado. Fixar LF mantém o mecanismo confiável no Windows.
+.spec/**/*.md text eol=lf
+
+# Scripts de shell precisam de LF para rodar fora do Windows.
+*.sh text eol=lf
