@@ -1,5 +1,7 @@
 import type { GpsRejectionReasonSlug } from '@/database/types';
 
+import { haversineDistanceMeters } from './distance';
+
 /**
  * Leitura de um `activity_point` já resolvida contra `gps_rejection_reasons`.
  * A ferramenta de inspeção lê pontos aceitos e rejeitados no mesmo conjunto —
@@ -40,6 +42,42 @@ export interface AccuracyDistribution {
   buckets: AccuracyBucket[];
 }
 
+/** Resumo posicional de uma grandeza medida passo a passo. */
+export interface StepDistribution {
+  count: number;
+  median: number;
+  p95: number;
+  max: number;
+}
+
+/**
+ * Um passo entre dois aceitos consecutivos. É a unidade que o filtro julga:
+ * `maxPositionJumpMeters` olha o salto, `maxSampleIntervalSeconds` o intervalo e
+ * `maxPlausibleSpeedMetersPerSecond` a razão entre os dois.
+ */
+export interface AcceptedStep {
+  jumpMeters: number;
+  intervalSeconds: number;
+  /** `null` quando o intervalo não é positivo: a razão não existe e fica fora da distribuição. */
+  speedMetersPerSecond: number | null;
+}
+
+export interface AcceptedStepSummary {
+  /** Passos medidos: pares consecutivos de aceitos dentro do mesmo segmento. */
+  count: number;
+  /**
+   * Transições entre segmentos, deliberadamente fora das distribuições. O que
+   * separa dois segmentos é sinal perdido, não deslocamento do corredor —
+   * contá-lo inflaria justo o salto e o intervalo que a calibração precisa ler.
+   */
+  segmentTransitions: number;
+  /** Passos sem intervalo positivo — saem só da velocidade, continuam no salto e no intervalo. */
+  withoutPositiveInterval: number;
+  jumpMeters: StepDistribution | null;
+  intervalSeconds: StepDistribution | null;
+  speedMetersPerSecond: StepDistribution | null;
+}
+
 export interface GpsInspectionReport {
   totalPoints: number;
   acceptedPoints: number;
@@ -51,6 +89,8 @@ export interface GpsInspectionReport {
   segments: number;
   rejections: RejectionBreakdown[];
   accuracy: AccuracyDistribution | null;
+  /** Velocidade, salto e intervalo entre aceitos — o que baliza os outros três limiares. */
+  steps: AcceptedStepSummary;
 }
 
 export interface InspectionRouteCoordinate {
@@ -107,6 +147,41 @@ export function accuracyDistribution(values: readonly number[]): AccuracyDistrib
   };
 }
 
+export function stepDistribution(values: readonly number[]): StepDistribution | null {
+  const finite = values.filter(value => Number.isFinite(value));
+  if (!finite.length) return null;
+  const sorted = [...finite].sort((a, b) => a - b);
+  return { count: sorted.length, median: percentile(sorted, 0.5), p95: percentile(sorted, 0.95), max: sorted[sorted.length - 1]! };
+}
+
+/**
+ * Passos entre aceitos consecutivos, na ordem em que foram medidos. Os pares que
+ * cruzam segmento são descartados: aquele intervalo é a lacuna de sinal, não um
+ * deslocamento — é o mesmo critério que o motor usa para somar distância.
+ */
+export function acceptedSteps(accepted: readonly InspectedPoint[]): AcceptedStep[] {
+  return accepted.slice(1).flatMap((point, index) => {
+    const previous = accepted[index]!;
+    if (point.segment_index !== previous.segment_index) return [];
+    const jumpMeters = haversineDistanceMeters(previous, point);
+    const intervalSeconds = (point.recorded_at.getTime() - previous.recorded_at.getTime()) / 1000;
+    return [{ jumpMeters, intervalSeconds, speedMetersPerSecond: intervalSeconds > 0 ? jumpMeters / intervalSeconds : null }];
+  });
+}
+
+export function summarizeAcceptedSteps(accepted: readonly InspectedPoint[]): AcceptedStepSummary {
+  const steps = acceptedSteps(accepted);
+  const speeds = steps.map(step => step.speedMetersPerSecond).filter((value): value is number => value !== null);
+  return {
+    count: steps.length,
+    segmentTransitions: Math.max(accepted.length - 1, 0) - steps.length,
+    withoutPositiveInterval: steps.length - speeds.length,
+    jumpMeters: stepDistribution(steps.map(step => step.jumpMeters)),
+    intervalSeconds: stepDistribution(steps.map(step => step.intervalSeconds)),
+    speedMetersPerSecond: stepDistribution(speeds),
+  };
+}
+
 export function buildGpsInspectionReport(points: readonly InspectedPoint[]): GpsInspectionReport {
   const accepted = points.filter(point => point.is_valid);
   const rejected = points.filter(point => !point.is_valid);
@@ -128,6 +203,7 @@ export function buildGpsInspectionReport(points: readonly InspectedPoint[]): Gps
     segments: new Set(accepted.map(point => point.segment_index)).size,
     rejections,
     accuracy: accuracyDistribution(accuracies),
+    steps: summarizeAcceptedSteps(accepted),
   };
 }
 

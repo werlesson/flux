@@ -66,7 +66,7 @@ export default function GpsInspectorScreen() {
 
   return <Screen canGoBack title="Inspeção do GPS">
     <Text style={[styles.eyebrow, { color: theme.colors.highlight }]}>FERRAMENTA DE DESENVOLVIMENTO</Text>
-    <Text style={[styles.intro, { color: theme.colors.textSecondary }]}>Contagem de pontos rejeitados por motivo, distribuição de accuracy dos aceitos e comparação do percurso com e sem os descartes.</Text>
+    <Text style={[styles.intro, { color: theme.colors.textSecondary }]}>Contagem de pontos rejeitados por motivo, distribuição de accuracy dos aceitos, percentis de velocidade, salto e intervalo entre eles, e comparação do percurso com e sem os descartes.</Text>
     {data === null ? <Text style={{ color: theme.colors.textSecondary }}>Carregando atividades…</Text> : null}
     {data !== null && data.activities.length === 0 ? <Text style={{ color: theme.colors.textSecondary }}>Nenhuma atividade finalizada para inspecionar.</Text> : null}
     {data?.activities.map(activity => <Card

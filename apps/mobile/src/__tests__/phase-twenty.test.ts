@@ -7,7 +7,7 @@ import { act, create } from 'react-test-renderer';
 
 import { Button } from '@/components/button';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { bucketLabel, formatMeters, formatShare, GpsInspectionReportView } from '@/components/gps-inspection-report';
+import { bucketLabel, formatMeters, formatSeconds, formatShare, formatSpeed, GpsInspectionReportView } from '@/components/gps-inspection-report';
 import { GpsPurgePanel } from '@/components/gps-purge-panel';
 import { runMigrations } from '@/database/migrations';
 import { NodeSQLiteAdapter } from '@/database/node-adapter';
@@ -19,11 +19,14 @@ import { haversineDistanceMeters } from '@/gps/distance';
 import {
   accuracyBucketEdgesMeters,
   accuracyDistribution,
+  acceptedSteps,
   buildGpsInspectionReport,
   gpsRejectionReasonOrder,
   type InspectedPoint,
   inspectionRouteCoordinates,
   percentile,
+  stepDistribution,
+  summarizeAcceptedSteps,
 } from '@/gps/inspection';
 import {
   calibracaoDeCampoConcluida,
@@ -197,6 +200,103 @@ describe('fase 20 — ferramenta de inspeção do GPS', () => {
     const seeded = await database.all<{ slug: GpsRejectionReasonSlug }>('SELECT slug FROM gps_rejection_reasons ORDER BY slug');
     expect([...gpsRejectionReasonOrder].sort()).toEqual(seeded.map(row => row.slug));
     database.close();
+  });
+});
+
+/** Aceito com coordenada variável: o passo só existe quando dois aceitos ficam a alguma distância. */
+const aceitoEm = (seconds: number, latitude: number, segment = 0): InspectedPoint =>
+  ({ latitude, longitude: -38.5, accuracy: 6, recorded_at: new Date(seconds * 1000), is_valid: true, rejection_reason_slug: null, segment_index: segment });
+const salto = (from: number, to: number) => haversineDistanceMeters({ latitude: from, longitude: -38.5 }, { latitude: to, longitude: -38.5 });
+
+describe('fase 20 — passos entre aceitos (insumo dos limiares da fase 21)', () => {
+  it('mede salto, intervalo e velocidade entre aceitos consecutivos', () => {
+    const primeiro = salto(-3.7, -3.7001);
+    const segundo = salto(-3.7001, -3.7004);
+    const resumo = summarizeAcceptedSteps([aceitoEm(0, -3.7), aceitoEm(2, -3.7001), aceitoEm(6, -3.7004)]);
+
+    expect(resumo.count).toBe(2);
+    expect(resumo.segmentTransitions).toBe(0);
+    expect(resumo.withoutPositiveInterval).toBe(0);
+    expect(resumo.jumpMeters!.max).toBeCloseTo(segundo, 9);
+    expect(resumo.jumpMeters!.median).toBeCloseTo((primeiro + segundo) / 2, 9);
+    expect(resumo.intervalSeconds!).toMatchObject({ count: 2, median: 3, max: 4 });
+    expect(resumo.speedMetersPerSecond!.max).toBeCloseTo(Math.max(primeiro / 2, segundo / 4), 9);
+    expect(resumo.speedMetersPerSecond!.count).toBe(2);
+  });
+
+  it('a transição entre segmentos não entra no salto nem no intervalo', () => {
+    const dentroDoSegmento = salto(-3.7, -3.7001);
+    const pontos = [aceitoEm(0, -3.7), aceitoEm(2, -3.7001), aceitoEm(400, -3.9, 1)];
+    const resumo = summarizeAcceptedSteps(pontos);
+
+    expect(acceptedSteps(pontos)).toHaveLength(1);
+    expect(resumo).toMatchObject({ count: 1, segmentTransitions: 1 });
+    expect(resumo.jumpMeters!.max).toBeCloseTo(dentroDoSegmento, 9);
+    expect(resumo.jumpMeters!.max).toBeLessThan(salto(-3.7001, -3.9));
+    expect(resumo.intervalSeconds!.max).toBe(2);
+  });
+
+  it('os rejeitados não formam passo — o par é entre os aceitos que sobraram', () => {
+    const report = buildGpsInspectionReport([aceitoEm(0, -3.7), rejectedAt(5, 'position_jump'), aceitoEm(10, -3.7001)]);
+    expect(report.steps.count).toBe(1);
+    expect(report.steps.intervalSeconds!.max).toBe(10);
+    expect(report.steps.jumpMeters!.max).toBeCloseTo(salto(-3.7, -3.7001), 9);
+  });
+
+  it('passo sem intervalo positivo sai da velocidade e permanece no salto e no intervalo', () => {
+    const resumo = summarizeAcceptedSteps([aceitoEm(3, -3.7), aceitoEm(3, -3.7001)]);
+    expect(resumo).toMatchObject({ count: 1, withoutPositiveInterval: 1, speedMetersPerSecond: null });
+    expect(resumo.jumpMeters!.max).toBeCloseTo(salto(-3.7, -3.7001), 9);
+    expect(resumo.intervalSeconds!.max).toBe(0);
+  });
+
+  it('sem dois aceitos em sequência não há distribuição de passo', () => {
+    expect(stepDistribution([])).toBeNull();
+    expect(stepDistribution([Number.NaN])).toBeNull();
+    expect(stepDistribution([4, 8])).toMatchObject({ count: 2, median: 6, max: 8 });
+    expect(stepDistribution([4, 8])!.p95).toBeCloseTo(7.8, 9);
+    expect(summarizeAcceptedSteps([aceitoEm(0, -3.7)]))
+      .toMatchObject({ count: 0, segmentTransitions: 0, jumpMeters: null, intervalSeconds: null, speedMetersPerSecond: null });
+    expect(summarizeAcceptedSteps([])).toMatchObject({ count: 0, segmentTransitions: 0 });
+  });
+
+  it('os percentis saem do que está persistido, na ordem gravada', async () => {
+    const { database, activity, points } = await setup();
+    await points.inserir([
+      { activity_id: activity.id, latitude: -3.7000, longitude: -38.5, accuracy: 6, recorded_at: new Date(0), is_valid: true },
+      { activity_id: activity.id, latitude: 40, longitude: 40, accuracy: 90, recorded_at: new Date(1000), is_valid: false, rejection_reason_slug: 'position_jump' },
+      { activity_id: activity.id, latitude: -3.7001, longitude: -38.5, accuracy: 7, recorded_at: new Date(2000), is_valid: true },
+      { activity_id: activity.id, latitude: -3.7004, longitude: -38.5, accuracy: 5, recorded_at: new Date(6000), is_valid: true },
+    ]);
+    const report = buildGpsInspectionReport(await points.listarParaInspecao(activity.id));
+    expect(report.steps.count).toBe(2);
+    expect(report.steps.jumpMeters!.max).toBeCloseTo(salto(-3.7001, -3.7004), 9);
+    expect(report.steps.intervalSeconds!.max).toBe(4);
+    expect(report.steps.speedMetersPerSecond!.max).toBeCloseTo(salto(-3.7001, -3.7004) / 4, 9);
+    database.close();
+  });
+
+  it('a tela mostra os percentis de velocidade, salto e intervalo', () => {
+    const report = buildGpsInspectionReport([aceitoEm(0, -3.7), aceitoEm(2, -3.7001), aceitoEm(6, -3.7004)]);
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(React.createElement(GpsInspectionReportView, {
+        coordinates: [], includeRejected: false, labels, onToggleRejected: jest.fn(), report,
+      }));
+    });
+    const texts = renderer.root.findAllByType(Text).map(node => String(node.props.children));
+    for (const expected of ['PASSOS ENTRE ACEITOS', 'VELOCIDADE', 'SALTO', 'INTERVALO']) {
+      expect(texts.some(text => text.includes(expected))).toBe(true);
+    }
+    expect(texts).toContain(formatSpeed(report.steps.speedMetersPerSecond!.p95));
+    expect(texts).toContain(formatMeters(report.steps.jumpMeters!.p95));
+    expect(texts).toContain(formatSeconds(report.steps.intervalSeconds!.p95));
+    act(() => renderer.unmount());
+  });
+
+  it('formata velocidade e intervalo em pt-BR', () => {
+    expect(formatSpeed(3.456)).toBe('3,46 m/s');
+    expect(formatSeconds(12.34)).toBe('12,3 s');
   });
 });
 
