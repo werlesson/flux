@@ -1,0 +1,45 @@
+/*
+ * Contorno do MAX_PATH do Windows no build de release Android.
+ *
+ * `./gradlew assembleRelease` falha no Windows com
+ *   ninja: error: manifest 'build.ninja' still dirty after 100 tries
+ * no módulo react-native-reanimated. O release compila o C++ em
+ * `RelWithDebInfo` — nove caracteres a mais que o `Debug` do build de
+ * desenvolvimento — e isso empurra caminhos como
+ *   ...\node_modules\react-native-reanimated\android\.cxx\RelWithDebInfo
+ *   \<hash>\prefab\...\react-native-workletsConfigVersion.cmake
+ * para perto de 250 caracteres. O ninja usa as APIs ANSI do Windows, cujo
+ * limite é 260, e passa a "não enxergar" os próprios arquivos gerados —
+ * invalidando o manifesto em laço até desistir.
+ *
+ * A saída é mandar o staging do CMake para uma raiz curta. `subst` não
+ * resolve: o autolinking do Expo faz realpath e devolve os caminhos
+ * originais em `C:\`. A correção definitiva seria mover o repositório
+ * para uma raiz curta (ex.: `C:\dev\flux`) — o `nodeLinker: hoisted` do
+ * pnpm-workspace.yaml já existe pelo mesmo motivo.
+ *
+ * Uso:
+ *   cd apps/mobile/android
+ *   ./gradlew assembleRelease --init-script ../flux-short-cxx.init.gradle
+ *
+ * A raiz padrão é C:\f e pode ser trocada com -PfluxNativeStagingDir=D:\x.
+ * O diretório guarda os objetos nativos compilados: apagá-lo força
+ * recompilar todo o C++ do zero.
+ */
+
+def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+
+gradle.allprojects { project ->
+  if (!isWindows) {
+    return
+  }
+
+  def stagingRoot = project.findProperty('fluxNativeStagingDir') ?: 'C:/f'
+
+  ['com.android.library', 'com.android.application'].each { pluginId ->
+    project.plugins.withId(pluginId) {
+      project.android.externalNativeBuild.cmake.buildStagingDirectory =
+        new File("${stagingRoot}/${project.name}")
+    }
+  }
+}

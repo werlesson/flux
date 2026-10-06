@@ -26,6 +26,12 @@
     "plugins": [
       "expo-router",
       [
+        "expo-dev-client",
+        {
+          "embeddedBundle": true
+        }
+      ],
+      [
         "expo-location",
         {
           "isAndroidBackgroundLocationEnabled": true,
