@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts, spacing, tabularMetric } from '@/constants/theme';
-import { initializeDatabase } from '@/database';
-import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import type { ActivitySplit } from '@/database/types';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration } from '@/utils/formatters';
@@ -25,18 +22,6 @@ export function ActivitySplits({ splits }: { splits: readonly ActivitySplit[] })
     <Text style={[styles.kilometer, { color: split.isBest ? theme.colors.highlight : theme.colors.text }]}>KM {split.kilometer}</Text>
     <Text style={[styles.pace, { color: split.isBest ? theme.colors.highlight : theme.colors.text }]}>{formatDuration(split.duration_seconds)}</Text>
   </View>)}</View>;
-}
-
-/** Fonte compartilhada pela tela de resultado e pelo detalhe do historico. */
-export function PersistedActivitySplits({ activityId }: { activityId: number | null }) {
-  const [loaded, setLoaded] = useState<{ activityId: number; rows: ActivitySplit[] } | null>(null);
-  useEffect(() => {
-    if (activityId === null) return;
-    let active = true;
-    void initializeDatabase().then(database => new ActivitySplitsRepository(database).listar(activityId)).then(rows => { if (active) setLoaded({ activityId, rows }); });
-    return () => { active = false; };
-  }, [activityId]);
-  return <ActivitySplits splits={loaded !== null && loaded.activityId === activityId ? loaded.rows : []} />;
 }
 
 const styles = StyleSheet.create({

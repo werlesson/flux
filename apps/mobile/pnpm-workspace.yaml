@@ -14,6 +14,12 @@ nodeLinker: hoisted
 allowBuilds:
   unrs-resolver: true
 
+# Exceções à janela de quarentena do pnpm, geradas pelo `expo install --fix`
+# ao atualizar os pacotes para os patches do SDK 57. Sem elas o lockfile não
+# resolve: as versões são recentes demais para a política de minimumReleaseAge.
+# São todas do próprio Expo, dentro do SDK 57 — nenhuma dependência de
+# terceiros entra aqui. Para voltar a respeitar a quarentena, remova o bloco
+# e rode `pnpm install`: os pacotes retornam às versões anteriores.
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.28'
   - '@expo/config-plugins@57.0.10'
