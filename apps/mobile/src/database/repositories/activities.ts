@@ -1,9 +1,10 @@
-import type { DatabaseAdapter } from '../adapter';
-import type { Activity, ActivityStatusSlug, ActivityTypeSlug } from '../types';
-import { withTransaction } from '../transaction';
+import type { DatabaseAdapter } from '@/database/adapter';
+import { withTransaction } from '@/database/transaction';
+import type { Activity, ActivityStatusSlug, ActivityTypeSlug } from '@/database/types';
+
+import type { ActivityStepSnapshot } from './activity-steps';
 import { LookupRepository } from './lookups';
 import { dates, now } from './mappers';
-import type { ActivityStepSnapshot } from './activity-steps';
 
 export interface CreateActivityInput { user_id: number; activity_type_slug: ActivityTypeSlug; started_at: Date; training_session_id?: number | null; training_session_name?: string | null }
 export interface ActivityMetrics { finished_at?: Date | null; activity_status_slug?: ActivityStatusSlug; elapsed_duration_seconds: number; moving_duration_seconds: number; distance_meters: number; average_pace_seconds_per_km?: number | null; best_pace_seconds_per_km?: number | null }

@@ -2,13 +2,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { discardSummary, resultMetrics, rpeReading, saveActivityEvaluation } from '@/activity/result';
+import { runMigrations } from '@/database/migrations';
 import { NodeSQLiteAdapter } from '@/database/node-adapter';
 import { ActivitiesRepository } from '@/database/repositories/activities';
 import { ActivityPointsRepository } from '@/database/repositories/activity-points';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import { ActivityStepsRepository } from '@/database/repositories/activity-steps';
 import { TrainingSessionsRepository } from '@/database/repositories/training';
-import { runMigrations } from '@/database/migrations';
 import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
 import type { Activity } from '@/database/types';
 

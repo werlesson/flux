@@ -1,8 +1,9 @@
-import type { DatabaseAdapter } from '../adapter';
-import type { StepType, StepTypeSlug, TrainingBlock, TrainingSession, TrainingStep } from '../types';
-import { withTransaction } from '../transaction';
+import type { DatabaseAdapter } from '@/database/adapter';
+import { withTransaction } from '@/database/transaction';
+import type { StepType, StepTypeSlug, TrainingBlock, TrainingSession, TrainingStep } from '@/database/types';
+
 import { LookupRepository } from './lookups';
-import { dates, now, placeholders } from './mappers';
+import { dates, now } from './mappers';
 
 export interface TrainingStepInput { id?: number; step_type_id?: number; step_type_slug?: StepTypeSlug; duration_seconds: number; instructions?: string | null; distance_meters?: number | null; target_rpe?: number | null }
 export interface TrainingBlockInput { id?: number; repeat_count: number; steps: TrainingStepInput[] }

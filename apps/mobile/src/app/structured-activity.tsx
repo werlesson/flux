@@ -5,7 +5,7 @@ import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useActivity } from '@/activity/activity-context';
 import { createActionGuard, formatActivityDistance, formatActivityPace, formatActivityTime, signalQualityToGpsStatus } from '@/activity/presentation';
 import { Button, GpsStatusPill, GuidanceSheet, Screen } from '@/components';
-import { colors, fontSizes, tabularMetric, type StepTypeSlug } from '@/constants/theme';
+import { colors, fontSizes, type StepTypeSlug,tabularMetric } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { routes } from '@/navigation/routes';
 import { formatDuration } from '@/utils/formatters';

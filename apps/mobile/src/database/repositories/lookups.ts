@@ -1,8 +1,9 @@
-import type { DatabaseAdapter } from '../adapter';
+import type { DatabaseAdapter } from '@/database/adapter';
 import type {
   ActivityStatus, ActivityStatusSlug, ActivityType, ActivityTypeSlug, GpsRejectionReason,
   GpsRejectionReasonSlug, StepExecutionStatus, StepExecutionStatusSlug, StepType, StepTypeSlug,
-} from '../types';
+} from '@/database/types';
+
 import { dates } from './mappers';
 
 export type LookupName = 'step_types' | 'activity_types' | 'activity_statuses' | 'step_execution_statuses' | 'gps_rejection_reasons';

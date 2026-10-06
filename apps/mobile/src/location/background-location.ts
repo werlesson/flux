@@ -2,10 +2,10 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 
 import { ActivityEngine } from '@/activity/engine';
+import { colors } from '@/constants/theme';
 import { initializeDatabase } from '@/database';
 import type { GpsSample } from '@/gps/filter';
 import { GpsFilterOrchestrator } from '@/gps/orchestrator';
-import { colors } from '@/constants/theme';
 
 export const LOCATION_TASK_NAME = 'flux-background-location';
 export const BACKGROUND_LOCATION_WARNING = 'Sem acesso à localização em segundo plano, a gravação pode parar quando a tela apagar.';

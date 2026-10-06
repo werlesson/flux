@@ -1,4 +1,5 @@
-import type { DatabaseAdapter } from '../adapter';
+import type { DatabaseAdapter } from '@/database/adapter';
+
 import { now } from './mappers';
 
 export type PreferenceValue = boolean | number | string | null;

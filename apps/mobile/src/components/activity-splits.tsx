@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts, spacing, tabularMetric } from '@/constants/theme';
-import type { ActivitySplit } from '@/database/types';
 import { initializeDatabase } from '@/database';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
+import type { ActivitySplit } from '@/database/types';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration } from '@/utils/formatters';
 
@@ -29,14 +29,14 @@ export function ActivitySplits({ splits }: { splits: readonly ActivitySplit[] })
 
 /** Fonte compartilhada pela tela de resultado e pelo detalhe do historico. */
 export function PersistedActivitySplits({ activityId }: { activityId: number | null }) {
-  const [splits, setSplits] = useState<ActivitySplit[]>([]);
+  const [loaded, setLoaded] = useState<{ activityId: number; rows: ActivitySplit[] } | null>(null);
   useEffect(() => {
+    if (activityId === null) return;
     let active = true;
-    if (activityId === null) { setSplits([]); return () => { active = false; }; }
-    void initializeDatabase().then(database => new ActivitySplitsRepository(database).listar(activityId)).then(rows => { if (active) setSplits(rows); });
+    void initializeDatabase().then(database => new ActivitySplitsRepository(database).listar(activityId)).then(rows => { if (active) setLoaded({ activityId, rows }); });
     return () => { active = false; };
   }, [activityId]);
-  return <ActivitySplits splits={splits} />;
+  return <ActivitySplits splits={loaded !== null && loaded.activityId === activityId ? loaded.rows : []} />;
 }
 
 const styles = StyleSheet.create({

@@ -1,6 +1,6 @@
-import { ActivitiesRepository, LookupRepository, TrainingSessionsRepository } from '@/database/repositories';
 import { runMigrations } from '@/database/migrations';
 import { NodeSQLiteAdapter } from '@/database/node-adapter';
+import { ActivitiesRepository, LookupRepository, TrainingSessionsRepository } from '@/database/repositories';
 import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
 import { activityOrigin } from '@/history/presentation';
 import { formatTrainingBlock, trainingActions, trainingCardPresentation } from '@/training/presentation';

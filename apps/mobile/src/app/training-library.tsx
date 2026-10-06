@@ -4,7 +4,7 @@ import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'r
 
 import { BottomSheet, Button, Card, Chip, ConfirmDialog, EmptyState, Screen } from '@/components';
 import { initializeDatabase } from '@/database';
-import { TrainingSessionsRepository, type TrainingLibraryItem } from '@/database/repositories/training';
+import { type TrainingLibraryItem,TrainingSessionsRepository } from '@/database/repositories/training';
 import { useTheme } from '@/hooks/use-theme';
 import { routes } from '@/navigation/routes';
 import { trainingActions, trainingCardPresentation } from '@/training/presentation';

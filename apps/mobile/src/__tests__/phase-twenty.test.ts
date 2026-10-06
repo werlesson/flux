@@ -17,9 +17,9 @@ import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
 import type { GpsRejectionReasonSlug } from '@/database/types';
 import { haversineDistanceMeters } from '@/gps/distance';
 import {
+  acceptedSteps,
   accuracyBucketEdgesMeters,
   accuracyDistribution,
-  acceptedSteps,
   buildGpsInspectionReport,
   gpsRejectionReasonOrder,
   type InspectedPoint,

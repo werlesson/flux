@@ -1,4 +1,4 @@
-import { fromDatabaseTimestamp } from '../dates';
+import { fromDatabaseTimestamp } from '@/database/dates';
 
 export type RawRow = Record<string, unknown>;
 

@@ -4,13 +4,13 @@ import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useActivity } from '@/activity/activity-context';
 import { discardSummary, resultMetrics, resultSubtitle } from '@/activity/result';
-import { ActivitySplits } from '@/components/activity-splits';
 import { ActivityRouteMap, Button, ConfirmDialog, MetricGrid, MetricTile, Screen } from '@/components';
+import { ActivitySplits } from '@/components/activity-splits';
 import { initializeDatabase } from '@/database';
 import { ActivitiesRepository } from '@/database/repositories/activities';
 import { ActivityPointsRepository } from '@/database/repositories/activity-points';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
-import { ActivityStepsRepository, type ActivityStepResult } from '@/database/repositories/activity-steps';
+import { type ActivityStepResult,ActivityStepsRepository } from '@/database/repositories/activity-steps';
 import type { Activity, ActivityPoint, ActivitySplit, StepExecutionStatusSlug } from '@/database/types';
 import { useTheme } from '@/hooks/use-theme';
 import { routes } from '@/navigation/routes';

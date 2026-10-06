@@ -1,5 +1,6 @@
-import type { DatabaseAdapter } from '../adapter';
-import type { ActivitySplit } from '../types';
+import type { DatabaseAdapter } from '@/database/adapter';
+import type { ActivitySplit } from '@/database/types';
+
 import { dates, now } from './mappers';
 
 export class ActivitySplitsRepository {

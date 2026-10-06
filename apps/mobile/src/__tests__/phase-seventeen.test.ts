@@ -1,3 +1,6 @@
+import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
+
 import { ActivityEngine } from '@/activity/engine';
 import { expandTrainingBlocks, TrainingEngine } from '@/activity/training-engine';
 import { announceTrainingFinished } from '@/activity/training-guidance';
@@ -5,8 +8,6 @@ import { runMigrations } from '@/database/migrations';
 import { NodeSQLiteAdapter } from '@/database/node-adapter';
 import { ActivitiesRepository, ActivityPointsRepository, ActivitySplitsRepository, ActivityStepsRepository, LookupRepository, TrainingSessionsRepository } from '@/database/repositories';
 import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
-import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
 
 async function setup() { const database=new NodeSQLiteAdapter(); await runMigrations(database); await seedLookups(database); const userId=await bootstrapLocalUser(database); const lookups=new LookupRepository(database); await lookups.carregar(); const training=await new TrainingSessionsRepository(database,lookups).salvar({user_id:userId,name:'Canônico',blocks:[{repeat_count:1,steps:[{step_type_slug:'walk',duration_seconds:300,instructions:'Aqueça'}]},{repeat_count:6,steps:[{step_type_slug:'run',duration_seconds:120,instructions:'Corra'},{step_type_slug:'walk',duration_seconds:120,instructions:'Caminhe'}]},{repeat_count:1,steps:[{step_type_slug:'walk',duration_seconds:300,instructions:'Desaqueça'}]}]}); return {database,userId,training}; }
 

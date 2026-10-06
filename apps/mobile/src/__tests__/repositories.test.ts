@@ -1,11 +1,11 @@
 import type { DatabaseAdapter } from '@/database/adapter';
+import { runMigrations } from '@/database/migrations';
 import { NodeSQLiteAdapter } from '@/database/node-adapter';
 import {
   ActivitiesRepository, ActivityPointsRepository, ActivitySplitsRepository, ActivityStepsRepository,
   AppPreferencesRepository, LookupRepository, TrainingBlocksRepository, TrainingSessionsRepository,
   TrainingStepsRepository,
 } from '@/database/repositories';
-import { runMigrations } from '@/database/migrations';
 import { bootstrapLocalUser, seedAppPreferences, seedLookups } from '@/database/seeds';
 import { withTransaction } from '@/database/transaction';
 

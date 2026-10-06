@@ -2,7 +2,7 @@ import type { DatabaseAdapter } from '@/database/adapter';
 import { LookupRepository } from '@/database/repositories/lookups';
 import type { ActivityStep, TrainingBlock, TrainingStep } from '@/database/types';
 
-export interface TrainingBlockWithSteps extends Pick<TrainingBlock, 'position' | 'repeat_count'> { steps: Array<Pick<TrainingStep, 'id' | 'step_type_id' | 'position' | 'duration_seconds' | 'instructions'>> }
+export interface TrainingBlockWithSteps extends Pick<TrainingBlock, 'position' | 'repeat_count'> { steps: Pick<TrainingStep, 'id' | 'step_type_id' | 'position' | 'duration_seconds' | 'instructions'>[] }
 export interface ExecutableTrainingStep { training_step_id: number | null; step_type_id: number; position: number; repetition_index: number; planned_duration_seconds: number; instructions: string | null }
 
 /** Pure expansion. Neither the input nor its ordering is mutated. */

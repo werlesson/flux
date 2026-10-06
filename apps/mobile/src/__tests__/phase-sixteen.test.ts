@@ -1,9 +1,9 @@
-import { ActivitiesRepository, ActivityStepsRepository, LookupRepository, TrainingSessionsRepository } from '@/database/repositories';
 import { runMigrations } from '@/database/migrations';
 import { NodeSQLiteAdapter } from '@/database/node-adapter';
+import { ActivitiesRepository, ActivityStepsRepository, LookupRepository, TrainingSessionsRepository } from '@/database/repositories';
 import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
 import type { StepType } from '@/database/types';
-import { calculateEstimatedDuration, groupConsecutiveSteps, removeEditorStep, type EditorBlock, ungroupBlock, updateBlockRepeatCount, updateEditorStep } from '@/training/editor';
+import { calculateEstimatedDuration, type EditorBlock, groupConsecutiveSteps, removeEditorStep, ungroupBlock, updateBlockRepeatCount, updateEditorStep } from '@/training/editor';
 
 async function setup() {
   const database = new NodeSQLiteAdapter(); await runMigrations(database); await seedLookups(database);

@@ -10,7 +10,7 @@ import { TrainingSessionsRepository, type TrainingSessionTree } from '@/database
 import type { StepType } from '@/database/types';
 import { useTheme } from '@/hooks/use-theme';
 import { routes } from '@/navigation/routes';
-import { calculateEstimatedDuration, formatEditorDuration, groupConsecutiveSteps, removeEditorStep, reorderBlocks, reorderWithinBlock, STEP_TYPE_ORDER, type EditorBlock, type EditorStep, ungroupBlock, updateBlockRepeatCount, updateEditorStep } from '@/training/editor';
+import { calculateEstimatedDuration, type EditorBlock, type EditorStep, formatEditorDuration, groupConsecutiveSteps, removeEditorStep, reorderBlocks, reorderWithinBlock, STEP_TYPE_ORDER, ungroupBlock, updateBlockRepeatCount, updateEditorStep } from '@/training/editor';
 
 let draftKey = 0;
 const key = (prefix: string) => `${prefix}-${++draftKey}`;

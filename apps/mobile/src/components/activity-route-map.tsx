@@ -10,7 +10,7 @@ const FALLBACK_COPY = 'Nenhum ponto de GPS válido foi registrado nesta atividad
 
 export function buildRoutePolylines(coordinates: RouteCoordinate[]) {
   const valid = coordinates.filter(point => Number.isFinite(point.latitude) && Number.isFinite(point.longitude) && Math.abs(point.latitude) <= 90 && Math.abs(point.longitude) <= 180).sort((a, b) => a.recordedAt.getTime() - b.recordedAt.getTime());
-  const segments = new Map<number, Array<{ latitude: number; longitude: number }>>();
+  const segments = new Map<number, { latitude: number; longitude: number }[]>();
   for (const point of valid) { const segment = segments.get(point.segmentIndex) ?? []; segment.push({ latitude: point.latitude, longitude: point.longitude }); segments.set(point.segmentIndex, segment); }
   return [...segments.entries()].map(([segmentIndex, points]) => ({ id: `route-${segmentIndex}`, coordinates: points, color: '#D6431A', width: 6 }));
 }

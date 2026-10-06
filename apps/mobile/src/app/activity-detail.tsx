@@ -3,15 +3,15 @@ import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { resultMetrics } from '@/activity/result';
-import { ActivitySplits } from '@/components/activity-splits';
 import { ActivityRouteMap, Button, Card, ConfirmDialog, MetricGrid, MetricTile, Screen } from '@/components';
+import { ActivitySplits } from '@/components/activity-splits';
 import { initializeDatabase } from '@/database';
 import { ActivitiesRepository } from '@/database/repositories/activities';
 import { ActivityPointsRepository } from '@/database/repositories/activity-points';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
-import { ActivityStepsRepository, type ActivityStepResult } from '@/database/repositories/activity-steps';
+import { type ActivityStepResult,ActivityStepsRepository } from '@/database/repositories/activity-steps';
 import type { Activity, ActivityPoint, ActivitySplit, StepExecutionStatusSlug } from '@/database/types';
-import { activityOrigin, partialDistanceMeters, perceivedEffort, stepCountSummary, type StepCounts } from '@/history/presentation';
+import { activityOrigin, partialDistanceMeters, perceivedEffort, type StepCounts,stepCountSummary } from '@/history/presentation';
 import { useTheme } from '@/hooks/use-theme';
 import { routes } from '@/navigation/routes';
 import { formatDateTime, formatDistance, formatDuration } from '@/utils/formatters';

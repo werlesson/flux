@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
 import React from 'react';
 import { Text } from 'react-native';
 import { act, create } from 'react-test-renderer';
 
 import { createActionGuard, formatActivityDistance, formatActivityPace, formatActivityTime, signalQualityToGpsStatus } from '@/activity/presentation';
-import { GpsStatusPill, gpsStatusLabels, type GpsStatus } from '@/components/gps-status-pill';
+import { type GpsStatus,gpsStatusLabels, GpsStatusPill } from '@/components/gps-status-pill';
 
 describe('fase 8 — apresentação da corrida livre', () => {
   it('formata métricas estáveis para leitura durante a corrida', () => {

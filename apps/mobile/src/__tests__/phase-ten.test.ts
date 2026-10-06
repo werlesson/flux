@@ -1,7 +1,8 @@
-import * as Location from 'expo-location';
-import * as TaskManager from 'expo-task-manager';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 
 import { ActivityEngine } from '@/activity';
 import { colors } from '@/constants/theme';

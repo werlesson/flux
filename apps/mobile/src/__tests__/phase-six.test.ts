@@ -1,7 +1,8 @@
-import * as Location from 'expo-location';
-import * as TaskManager from 'expo-task-manager';
 import fs from 'node:fs';
 import path from 'node:path';
+
+import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 
 import { haversineDistanceMeters } from '@/gps/distance';
 import { createGpsFilterState, filterGpsSample, type GpsFilterState, type GpsSample } from '@/gps/filter';

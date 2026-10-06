@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { saveActivityEvaluation } from '@/activity/result';
+import { runMigrations } from '@/database/migrations';
 import { NodeSQLiteAdapter } from '@/database/node-adapter';
 import { ActivitiesRepository } from '@/database/repositories/activities';
 import { ActivityPointsRepository } from '@/database/repositories/activity-points';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import { TrainingSessionsRepository } from '@/database/repositories/training';
-import { runMigrations } from '@/database/migrations';
 import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
 import { historyCard, partialDistanceMeters, stepCountSummary } from '@/history/presentation';
 

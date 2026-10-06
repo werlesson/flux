@@ -1,6 +1,7 @@
-import type { DatabaseAdapter } from '../adapter';
-import type { ActivityPoint, GpsRejectionReasonSlug } from '../types';
-import { withTransaction } from '../transaction';
+import type { DatabaseAdapter } from '@/database/adapter';
+import { withTransaction } from '@/database/transaction';
+import type { ActivityPoint, GpsRejectionReasonSlug } from '@/database/types';
+
 import { LookupRepository } from './lookups';
 import { dates, now } from './mappers';
 
@@ -36,5 +37,5 @@ export class ActivityPointsRepository {
     return withTransaction(this.database, async tx => (await tx.run('DELETE FROM activity_points WHERE activity_id=? AND is_valid=0', [activityId])).changes);
   }
   async contarRejeitados(activityId: number): Promise<number> { const [row] = await this.database.all<{ total: number }>('SELECT COUNT(*) total FROM activity_points WHERE activity_id=? AND is_valid=0', [activityId]); return row?.total ?? 0; }
-  async contarPorMotivo(activityId: number): Promise<Array<{ reason: GpsRejectionReasonSlug; count: number }>> { return this.database.all('SELECT r.slug reason, COUNT(*) count FROM activity_points p JOIN gps_rejection_reasons r ON r.id=p.rejection_reason_id WHERE p.activity_id=? AND p.is_valid=0 GROUP BY r.id,r.slug ORDER BY r.slug', [activityId]); }
+  async contarPorMotivo(activityId: number): Promise<{ reason: GpsRejectionReasonSlug; count: number }[]> { return this.database.all('SELECT r.slug reason, COUNT(*) count FROM activity_points p JOIN gps_rejection_reasons r ON r.id=p.rejection_reason_id WHERE p.activity_id=? AND p.is_valid=0 GROUP BY r.id,r.slug ORDER BY r.slug', [activityId]); }
 }

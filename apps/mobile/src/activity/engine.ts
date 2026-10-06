@@ -5,8 +5,8 @@ import { ActivitySplitsRepository } from '@/database/repositories/activity-split
 import { ActivityStepsRepository } from '@/database/repositories/activity-steps';
 import { AppPreferencesRepository } from '@/database/repositories/preferences';
 import type { Activity, ActivityStatusSlug, ActivityTypeSlug } from '@/database/types';
-import type { GpsSample } from '@/gps/filter';
 import { haversineDistanceMeters } from '@/gps/distance';
+import type { GpsSample } from '@/gps/filter';
 import { GpsFilterOrchestrator } from '@/gps/orchestrator';
 import { addSignalSample, createSignalQualityState, evaluateSignalTimeout, type SignalQuality, type SignalQualityState } from '@/gps/signal-quality';
 import { activityPointBatchFlushIntervalSeconds, activityPointBatchSize, activityStatePersistenceIntervalSeconds, currentPaceMinimumDurationSeconds, currentPaceWindowSeconds, movingMinimumDisplacementMeters, movingSpeedThresholdMetersPerSecond } from '@/gps/thresholds';
@@ -14,7 +14,7 @@ import { activityPointBatchFlushIntervalSeconds, activityPointBatchSize, activit
 import { type ActivityClock,elapsedSeconds, paceSecondsPerKm, systemActivityClock } from './clock';
 import { GuidanceService, verbalizeSplit, verbalizeStep } from './guidance';
 import { KilometerSplitDetector } from './split-detector';
-import { expandTrainingBlocks, TrainingEngine, type TrainingBlockWithSteps } from './training-engine';
+import { expandTrainingBlocks, type TrainingBlockWithSteps,TrainingEngine } from './training-engine';
 
 export interface ActivityMetricsSnapshot { elapsed: number; moving: number; distance: number; currentPace: number | null; averagePace: number | null }
 export interface StructuredStepSnapshot {

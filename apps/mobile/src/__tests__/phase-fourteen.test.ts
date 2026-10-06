@@ -1,8 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
 import React from 'react';
 import { Platform, Text, View } from 'react-native';
 import { act, create } from 'react-test-renderer';
+
+import { ActivityRouteMap, buildRoutePolylines, calculateRouteCamera, type RouteCoordinate } from '@/components/activity-route-map';
+import { runMigrations } from '@/database/migrations';
+import { NodeSQLiteAdapter } from '@/database/node-adapter';
+import { ActivitiesRepository } from '@/database/repositories/activities';
+import { ActivityPointsRepository } from '@/database/repositories/activity-points';
+import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
+
+// eslint-disable-next-line no-restricted-imports -- app.config.ts fica na raiz do app, fora de src/, e o alias @/* so alcanca src/.
+import appConfig from '../../app.config';
 
 let mockExpoMapsAvailable = true;
 let mockGoogleMapsConfigured = false;
@@ -17,14 +28,6 @@ jest.mock('expo-maps', () => ({
     return mockExpoMapsAvailable ? { View: (props: object) => mockReact.createElement(mockView, { ...props, testID: 'google-map' }) } : undefined;
   },
 }));
-
-import appConfig from '../../app.config';
-import { ActivityRouteMap, buildRoutePolylines, calculateRouteCamera, type RouteCoordinate } from '@/components/activity-route-map';
-import { NodeSQLiteAdapter } from '@/database/node-adapter';
-import { runMigrations } from '@/database/migrations';
-import { ActivitiesRepository } from '@/database/repositories/activities';
-import { ActivityPointsRepository } from '@/database/repositories/activity-points';
-import { bootstrapLocalUser, seedLookups } from '@/database/seeds';
 
 const point = (latitude: number, longitude: number, seconds: number, segmentIndex = 0): RouteCoordinate => ({ latitude, longitude, recordedAt: new Date(seconds * 1000), segmentIndex });
 

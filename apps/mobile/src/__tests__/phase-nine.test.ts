@@ -1,8 +1,8 @@
 import { ActivityEngine } from '@/activity';
 import { KilometerSplitDetector } from '@/activity/split-detector';
 import { presentActivitySplits } from '@/components/activity-splits';
-import { NodeSQLiteAdapter } from '@/database/node-adapter';
 import { runMigrations } from '@/database/migrations';
+import { NodeSQLiteAdapter } from '@/database/node-adapter';
 import { ActivitiesRepository } from '@/database/repositories/activities';
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import { bootstrapLocalUser, seedAppPreferences, seedLookups } from '@/database/seeds';

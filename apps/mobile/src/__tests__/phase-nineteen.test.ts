@@ -1,3 +1,6 @@
+import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
+
 import { ActivityEngine, type ActivityGuidance } from '@/activity/engine';
 import { GuidanceService, SpeechQueue, verbalizeDistance, verbalizeDuration, verbalizePace, verbalizeSplit, verbalizeStep } from '@/activity/guidance';
 import { runMigrations } from '@/database/migrations';
@@ -6,14 +9,12 @@ import { AppPreferencesRepository, LookupRepository, TrainingSessionsRepository 
 import { ActivitySplitsRepository } from '@/database/repositories/activity-splits';
 import { bootstrapLocalUser, seedAppPreferences, seedLookups } from '@/database/seeds';
 import type { StepTypeSlug } from '@/database/types';
-import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
 import { handleBackgroundLocationTask, setBackgroundGpsConsumer } from '@/location/background-location';
 
 const mockedSpeech = Speech as jest.Mocked<typeof Speech>;
 const mockedHaptics = Haptics as jest.Mocked<typeof Haptics>;
 
-async function setup(steps: Array<{ step_type_slug: StepTypeSlug; duration_seconds: number; instructions: string | null }> = [{ step_type_slug: 'walk', duration_seconds: 120, instructions: null }, { step_type_slug: 'run', duration_seconds: 60, instructions: 'Comece a correr.' }]) {
+async function setup(steps: { step_type_slug: StepTypeSlug; duration_seconds: number; instructions: string | null }[] = [{ step_type_slug: 'walk', duration_seconds: 120, instructions: null }, { step_type_slug: 'run', duration_seconds: 60, instructions: 'Comece a correr.' }]) {
   const database = new NodeSQLiteAdapter();
   await runMigrations(database); await seedLookups(database); await seedAppPreferences(database);
   const userId = await bootstrapLocalUser(database);
@@ -40,7 +41,7 @@ describe('fase 19 — orientações por áudio e vibração', () => {
   });
 
   it('falas concorrentes são enfileiradas e não sobrepostas', async () => {
-    const done: Array<() => void> = [];
+    const done: (() => void)[] = [];
     mockedSpeech.speak.mockImplementation((_text, options) => { done.push(() => options?.onDone?.()); });
     const queue = new SpeechQueue();
     queue.enqueue('Primeira'); queue.enqueue('Segunda');

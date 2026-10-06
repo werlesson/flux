@@ -3,8 +3,8 @@ import { openDatabaseAsync } from 'expo-sqlite';
 import { configureDatabaseConnection, type DatabaseAdapter } from './adapter';
 import { ExpoSQLiteAdapter } from './expo-adapter';
 import { runMigrations } from './migrations';
-import { bootstrapLocalUser, seedAppPreferences, seedLookups } from './seeds';
 import { LookupRepository } from './repositories/lookups';
+import { bootstrapLocalUser, seedAppPreferences, seedLookups } from './seeds';
 
 let databasePromise: Promise<DatabaseAdapter> | undefined;
 let localUserId: number | undefined;
